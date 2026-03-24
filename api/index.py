@@ -1,8 +1,12 @@
 """Flask application for Blackjack game."""
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from flask import Flask, render_template, session, request, jsonify
 from app.game import BlackjackGame
 
-app = Flask(__name__, template_folder='app/templates', static_folder='app/static')
+app = Flask(__name__, template_folder='../app/templates', static_folder='../app/static')
 app.secret_key = 'your-secret-key-change-in-production'  # Change this in production!
 
 
