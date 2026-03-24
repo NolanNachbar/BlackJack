@@ -361,13 +361,13 @@ async function dealCards() {
 
         // Dealer peek animation if needed
         if (dealResult.dealer_should_peek) {
-            showDealerMessage('Dealer checking for blackjack...', 1500);
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            showMessage('Dealer checking for blackjack...', 'info');
+            await new Promise(resolve => setTimeout(resolve, 800));
         }
 
         if (dealResult.dealer_blackjack) {
-            showDealerMessage('Dealer has Blackjack!', 3000);
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            showMessage('Dealer has Blackjack!', 'error');
+            await new Promise(resolve => setTimeout(resolve, 2000));
             await settleBets();
         } else {
             // Check for player blackjacks and offer insurance/even money
@@ -669,30 +669,54 @@ async function playDealer() {
     // Check if all hands bust/surrendered
     const allHandsDone = gameState.hands.every(hand => hand.is_bust || hand.surrendered);
     if (allHandsDone) {
-        showDealerMessage('All hands bust or surrendered', 2000);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await settleBets();
         return;
     }
 
-    showDealerMessage('Dealer plays...', 1500);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
     try {
+        // Get dealer's full hand from backend
         const result = await apiCall('/dealer', {});
         gameState = result.state;
-        renderGameState();
+
+        // Animate dealer drawing cards one at a time
+        await animateDealerPlay();
 
         if (result.dealer_bust) {
-            showDealerMessage('Dealer Busts!', 2000);
+            showMessage('Dealer Busts!', 'error');
         } else {
-            showDealerMessage(`Dealer stands at ${gameState.dealer.total}`, 2000);
+            showMessage(`Dealer stands at ${gameState.dealer.total}`, 'info');
         }
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
         await settleBets();
     } catch (error) {
         console.error('Dealer error:', error);
+    }
+}
+
+async function animateDealerPlay() {
+    // Flip the hole card first
+    const holeCard = dealerCards.children[0];
+    if (holeCard && holeCard.classList.contains('card-back')) {
+        flipCardToFront(holeCard, gameState.dealer.cards[0]);
+        playCardSound();
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        // Update dealer count after revealing hole card
+        renderDealerHand();
+    }
+
+    // Deal additional cards one at a time with delay
+    const initialCardCount = dealerCards.children.length;
+    for (let i = initialCardCount; i < gameState.dealer.cards.length; i++) {
+        const cardEl = createCardElement(gameState.dealer.cards[i]);
+        dealerCards.appendChild(cardEl);
+        playCardSound();
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        // Update dealer count after each card
+        renderDealerHand();
     }
 }
 
@@ -722,50 +746,66 @@ async function settleBets() {
 }
 
 function showResults(results) {
-    let messages = [];
     results.forEach((result, idx) => {
         let msg = `Hand ${result.hand}: `;
         let outcomeClass = '';
+        let messageType = 'info';
 
         switch (result.outcome) {
             case 'blackjack':
                 msg += `BLACKJACK! Win $${result.payout}`;
                 outcomeClass = 'win';
+                messageType = 'success';
                 sessionStats.wins++;
                 sessionStats.blackjacks++;
                 break;
             case 'win':
                 msg += `WIN! $${result.payout}`;
                 outcomeClass = 'win';
+                messageType = 'success';
                 sessionStats.wins++;
                 break;
             case 'push':
                 msg += `PUSH - Return $${result.payout}`;
                 outcomeClass = 'push';
+                messageType = 'info';
                 sessionStats.pushes++;
                 break;
             case 'loss':
             case 'bust':
                 msg += `LOSE`;
                 outcomeClass = 'loss';
+                messageType = 'error';
                 sessionStats.losses++;
                 break;
             case 'surrender':
                 msg += `SURRENDER - Return $${result.payout}`;
                 outcomeClass = 'push';
+                messageType = 'info';
                 sessionStats.pushes++;
                 break;
         }
-        messages.push(msg);
+
+        // Show message as toast
+        showMessage(msg, messageType);
 
         // Add outcome marker to the hand
         const hand = gameState.hands[idx];
         if (hand) {
             const position = hand.position !== undefined ? hand.position : idx;
-            const statusContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-status`);
-            if (statusContainer) {
-                statusContainer.textContent = result.outcome.toUpperCase();
-                statusContainer.className = `hand-status ${outcomeClass}`;
+            const handsContainer = document.querySelector(`.player-hands-container[data-position="${position}"]`);
+            if (handsContainer) {
+                const handsAtPosition = gameState.hands.filter(h => (h.position !== undefined ? h.position : gameState.hands.indexOf(h)) === position);
+                const handIndexAtPosition = handsAtPosition.indexOf(hand);
+                const handElement = handsContainer.querySelector(`.player-hand[data-hand-index="${handIndexAtPosition}"]`);
+
+                if (handElement) {
+                    const statusContainer = handElement.querySelector('.hand-status');
+                    if (statusContainer) {
+                        statusContainer.textContent = result.outcome.toUpperCase();
+                        statusContainer.className = `hand-status ${outcomeClass}`;
+                    }
+                }
             }
         }
     });
@@ -774,8 +814,6 @@ function showResults(results) {
     document.getElementById('stat-wins').textContent = sessionStats.wins;
     document.getElementById('stat-losses').textContent = sessionStats.losses;
     document.getElementById('stat-pushes').textContent = sessionStats.pushes;
-
-    showDealerMessage(messages.join(' | '), 4000);
 }
 
 // Rendering
