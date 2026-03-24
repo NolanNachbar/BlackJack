@@ -480,6 +480,15 @@ input[type="number"] {
     z-index: 3;
 }
 
+/* Player Hands Container - holds one or more hands (for splits) */
+.player-hands-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
 /* Player Hands */
 .player-hand {
     min-height: 100px;
@@ -490,6 +499,8 @@ input[type="number"] {
     text-align: center;
     border: 2px solid transparent;
     transition: all 0.3s;
+    flex: 1;
+    max-width: 250px;
 }
 
 .player-hand.active {

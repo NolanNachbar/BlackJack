@@ -174,12 +174,16 @@ function clearAllCards() {
     dealerCards.innerHTML = '';
     dealerCount.textContent = '';
 
-    // Clear all player hands
-    document.querySelectorAll('.player-hand .cards').forEach(el => el.innerHTML = '');
-    document.querySelectorAll('.player-hand .hand-total').forEach(el => el.textContent = '');
-    document.querySelectorAll('.player-hand .hand-status').forEach(el => {
-        el.textContent = '';
-        el.className = 'hand-status';
+    // Clear all player hands and reset to single hand per position
+    document.querySelectorAll('.player-hands-container').forEach(container => {
+        const position = container.dataset.position;
+        container.innerHTML = `
+            <div class="player-hand" data-position="${position}" data-hand-index="0">
+                <div class="cards"></div>
+                <div class="hand-total"></div>
+                <div class="hand-status"></div>
+            </div>
+        `;
     });
 }
 
@@ -371,9 +375,10 @@ async function staggeredCardDeal() {
     for (let i = 0; i < gameState.hands.length; i++) {
         const hand = gameState.hands[i];
         const position = hand.position !== undefined ? hand.position : i;
-        const cardsContainer = document.querySelector(`.player-hand[data-position="${position}"] .cards`);
+        const handsContainer = document.querySelector(`.player-hands-container[data-position="${position}"]`);
+        const cardsContainer = handsContainer ? handsContainer.querySelector('.player-hand .cards') : null;
 
-        if (hand.cards[0]) {
+        if (cardsContainer && hand.cards[0]) {
             const cardEl = createCardElement(hand.cards[0]);
             cardsContainer.appendChild(cardEl);
             playCardSound();
@@ -393,9 +398,10 @@ async function staggeredCardDeal() {
     for (let i = 0; i < gameState.hands.length; i++) {
         const hand = gameState.hands[i];
         const position = hand.position !== undefined ? hand.position : i;
-        const cardsContainer = document.querySelector(`.player-hand[data-position="${position}"] .cards`);
+        const handsContainer = document.querySelector(`.player-hands-container[data-position="${position}"]`);
+        const cardsContainer = handsContainer ? handsContainer.querySelector('.player-hand .cards') : null;
 
-        if (hand.cards[1]) {
+        if (cardsContainer && hand.cards[1]) {
             const cardEl = createCardElement(hand.cards[1]);
             cardsContainer.appendChild(cardEl);
             playCardSound();
@@ -414,10 +420,13 @@ async function staggeredCardDeal() {
     // Update all totals after dealing
     gameState.hands.forEach((hand, index) => {
         const position = hand.position !== undefined ? hand.position : index;
-        const totalContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-total`);
-        const statusContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-status`);
+        const handsContainer = document.querySelector(`.player-hands-container[data-position="${position}"]`);
+        if (!handsContainer) return;
 
-        if (hand.total !== null) {
+        const totalContainer = handsContainer.querySelector('.player-hand .hand-total');
+        const statusContainer = handsContainer.querySelector('.player-hand .hand-status');
+
+        if (totalContainer && hand.total !== null) {
             if (hand.is_soft && hand.total <= 21) {
                 const lowTotal = hand.total - 10;
                 totalContainer.textContent = `${lowTotal}/${hand.total}`;
@@ -426,7 +435,7 @@ async function staggeredCardDeal() {
             }
         }
 
-        if (hand.is_blackjack) {
+        if (statusContainer && hand.is_blackjack) {
             statusContainer.textContent = 'BLACKJACK';
             statusContainer.classList.add('blackjack');
         }
@@ -560,13 +569,19 @@ function showActionPanel() {
 }
 
 function highlightCurrentHand() {
-    // Get the position of the current hand
+    // Get the position and index of the current hand
     const currentHand = gameState.hands[currentHandIndex];
-    const currentPosition = currentHand ? (currentHand.position !== undefined ? currentHand.position : currentHandIndex) : -1;
+    if (!currentHand) return;
+
+    const currentPosition = currentHand.position !== undefined ? currentHand.position : currentHandIndex;
+    const handsAtPosition = gameState.hands.filter(h => (h.position !== undefined ? h.position : gameState.hands.indexOf(h)) === currentPosition);
+    const handIndexAtPosition = handsAtPosition.indexOf(currentHand);
 
     document.querySelectorAll('.player-hand').forEach((el) => {
         const position = parseInt(el.dataset.position);
-        if (position === currentPosition) {
+        const handIndex = parseInt(el.dataset.handIndex);
+
+        if (position === currentPosition && handIndex === handIndexAtPosition) {
             el.classList.add('active');
         } else {
             el.classList.remove('active');
@@ -827,12 +842,41 @@ function renderPlayerHand(hand, index) {
     // Use the position field from the hand data to render in correct spot
     const position = hand.position !== undefined ? hand.position : index;
     console.log(`Rendering hand ${index}: position=${position}, cards=${hand.cards.length}`);
-    const cardsContainer = document.querySelector(`.player-hand[data-position="${position}"] .cards`);
-    const totalContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-total`);
-    const statusContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-status`);
+
+    // Get the container for this position
+    const handsContainer = document.querySelector(`.player-hands-container[data-position="${position}"]`);
+    if (!handsContainer) {
+        console.error(`Could not find hands container for position ${position}`);
+        return;
+    }
+
+    // Count how many hands at this position
+    const handsAtPosition = gameState.hands.filter(h => (h.position !== undefined ? h.position : gameState.hands.indexOf(h)) === position);
+    const handIndexAtPosition = handsAtPosition.indexOf(hand);
+
+    // Ensure we have the right number of hand elements
+    let handElement = handsContainer.querySelector(`.player-hand[data-hand-index="${handIndexAtPosition}"]`);
+
+    if (!handElement) {
+        // Create new hand element for split
+        handElement = document.createElement('div');
+        handElement.className = 'player-hand';
+        handElement.dataset.position = position;
+        handElement.dataset.handIndex = handIndexAtPosition;
+        handElement.innerHTML = `
+            <div class="cards"></div>
+            <div class="hand-total"></div>
+            <div class="hand-status"></div>
+        `;
+        handsContainer.appendChild(handElement);
+    }
+
+    const cardsContainer = handElement.querySelector('.cards');
+    const totalContainer = handElement.querySelector('.hand-total');
+    const statusContainer = handElement.querySelector('.hand-status');
 
     if (!cardsContainer) {
-        console.error(`Could not find card container for position ${position}`);
+        console.error(`Could not find card container for position ${position}, hand ${handIndexAtPosition}`);
         return;
     }
 
