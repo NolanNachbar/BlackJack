@@ -509,6 +509,10 @@ function renderDealerHand() {
     const currentCardCount = dealerCards.children.length;
     const newCardCount = gameState.dealer.cards.length;
 
+    // Check if we need to flip the hole card
+    const hadHiddenCard = Array.from(dealerCards.children).some(el => el.classList.contains('card-back'));
+    const hasHiddenCard = gameState.dealer.cards.some(card => card.rank === '??');
+
     // Only add new cards, don't re-render existing ones
     if (newCardCount > currentCardCount) {
         for (let i = currentCardCount; i < newCardCount; i++) {
@@ -522,6 +526,12 @@ function renderDealerHand() {
             const cardEl = createCardElement(card);
             dealerCards.appendChild(cardEl);
         });
+    } else if (hadHiddenCard && !hasHiddenCard) {
+        // Flip the hole card (first card)
+        const holeCard = dealerCards.children[0];
+        if (holeCard && holeCard.classList.contains('card-back')) {
+            flipCardToFront(holeCard, gameState.dealer.cards[0]);
+        }
     }
 
     // Update dealer count display
@@ -536,17 +546,32 @@ function renderDealerHand() {
                 dealerCount.textContent = gameState.dealer.total;
             }
         } else {
-            // One card hidden - show visible card value
-            const visibleCard = gameState.dealer.cards.find(card => card.rank !== '??');
-            if (visibleCard) {
-                dealerCount.textContent = getCardValue(visibleCard.rank);
-            } else {
-                dealerCount.textContent = '?';
-            }
+            // One card hidden - don't show count yet
+            dealerCount.textContent = '';
         }
     } else {
         dealerCount.textContent = '';
     }
+}
+
+function flipCardToFront(cardElement, newCardData) {
+    // Add flipping animation
+    cardElement.classList.add('flipping');
+
+    // After half the animation, change the card content
+    setTimeout(() => {
+        cardElement.classList.remove('card-back');
+        cardElement.textContent = newCardData.display;
+
+        if (newCardData.suit === '♥' || newCardData.suit === '♦') {
+            cardElement.classList.add('red');
+        }
+    }, 300); // Halfway through the 0.6s animation
+
+    // Remove animation class after it completes
+    setTimeout(() => {
+        cardElement.classList.remove('flipping');
+    }, 600);
 }
 
 function getCardValue(rank) {
@@ -618,11 +643,17 @@ function createCardElement(card) {
     const cardEl = document.createElement('div');
     cardEl.className = 'card';
 
-    if (card.suit === '♥' || card.suit === '♦') {
-        cardEl.classList.add('red');
+    // Check if this is a hidden card
+    if (card.rank === '??') {
+        cardEl.classList.add('card-back');
+        cardEl.textContent = '';
+    } else {
+        if (card.suit === '♥' || card.suit === '♦') {
+            cardEl.classList.add('red');
+        }
+        cardEl.textContent = card.display;
     }
 
-    cardEl.textContent = card.display;
     return cardEl;
 }
 
