@@ -101,34 +101,36 @@ input[type="number"] {
     right: 20px;
     bottom: 20px;
     background:
-        /* Radial lighting - brightest in center */
-        radial-gradient(ellipse at center, rgba(30, 100, 50, 0.3) 0%, transparent 70%),
-        /* Felt texture - subtle noise pattern */
+        /* Radial lighting - center highlight */
+        radial-gradient(ellipse 800px 400px at 50% 40%, rgba(40, 120, 60, 0.25) 0%, transparent 70%),
+        /* Felt texture - fine grain */
         repeating-linear-gradient(
             0deg,
             transparent,
             transparent 1px,
-            rgba(0, 0, 0, 0.02) 1px,
-            rgba(0, 0, 0, 0.02) 2px
+            rgba(0, 0, 0, 0.03) 1px,
+            rgba(0, 0, 0, 0.03) 2px
         ),
         repeating-linear-gradient(
             90deg,
             transparent,
             transparent 1px,
-            rgba(0, 0, 0, 0.02) 1px,
-            rgba(0, 0, 0, 0.02) 2px
+            rgba(0, 0, 0, 0.03) 1px,
+            rgba(0, 0, 0, 0.03) 2px
         ),
-        /* Base felt gradient */
-        radial-gradient(ellipse at center, #26734a 0%, #1e5a3a 50%, #164229 100%);
+        /* Edge darkening */
+        radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0, 0, 0, 0.15) 100%),
+        /* Base felt color */
+        linear-gradient(180deg, #1f5c3d 0%, #1a5038 50%, #154331 100%);
     border-radius: 120px;
     box-shadow:
         /* Inner shadow for depth */
-        inset 0 8px 20px rgba(0, 0, 0, 0.5),
-        inset 0 -8px 20px rgba(0, 0, 0, 0.3);
+        inset 0 10px 25px rgba(0, 0, 0, 0.4),
+        inset 0 -10px 25px rgba(0, 0, 0, 0.3);
     pointer-events: none;
 }
 
-/* Table edge (wood/leather rim) */
+/* Table edge (wood rim) */
 .casino-table::after {
     content: '';
     position: absolute;
@@ -139,20 +141,20 @@ input[type="number"] {
     border: 20px solid;
     border-image: linear-gradient(
         135deg,
-        #5a3a1a 0%,
-        #8b5a3c 25%,
-        #6b4423 50%,
-        #4a2f1a 75%,
-        #5a3a1a 100%
+        #4a3020 0%,
+        #5e3d28 25%,
+        #4f3422 50%,
+        #3d271a 75%,
+        #4a3020 100%
     ) 1;
     border-radius: 140px;
     box-shadow:
-        /* Outer glow */
-        0 0 40px rgba(0, 0, 0, 0.8),
-        /* Inner edge shadow */
-        inset 0 0 30px rgba(0, 0, 0, 0.6),
-        /* Highlight on top edge */
-        inset 0 4px 8px rgba(139, 90, 60, 0.6);
+        /* Outer shadow */
+        0 0 50px rgba(0, 0, 0, 0.9),
+        /* Inner edge shadow for depth */
+        inset 0 0 30px rgba(0, 0, 0, 0.7),
+        /* Subtle highlight on top */
+        inset 0 3px 6px rgba(94, 61, 40, 0.4);
     pointer-events: none;
 }
 
@@ -165,106 +167,122 @@ input[type="number"] {
     display: none;
 }
 
-/* Table Header */
+/* HUD Zone - Floating Panels */
 .table-header {
     position: absolute;
-    top: 0;
+    top: 24px;
     left: 0;
     right: 0;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 18px 35px;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 100%);
-    border-bottom: 3px solid rgba(139, 90, 60, 0.6);
+    align-items: flex-start;
+    padding: 0 32px;
     z-index: 10;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
 }
 
+.table-header > * {
+    pointer-events: auto;
+}
+
+/* Left floating panel */
 .table-sign {
-    text-align: left;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 12px 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .table-title {
-    font-size: 1.6em;
+    font-size: 1.4em;
     font-weight: 900;
     color: #ffd700;
     text-shadow:
-        0 2px 10px rgba(255, 215, 0, 0.6),
-        0 0 20px rgba(255, 215, 0, 0.3);
-    letter-spacing: 3px;
+        0 2px 8px rgba(0, 0, 0, 0.8),
+        0 0 15px rgba(255, 215, 0, 0.4);
+    letter-spacing: 2.5px;
 }
 
 .table-limits {
-    font-size: 0.8em;
-    color: #b0d0f0;
-    margin-top: 5px;
+    font-size: 0.7em;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 4px;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
 }
 
+/* Right floating panel */
 .bankroll-display {
-    text-align: right;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.8) 100%);
-    padding: 12px 25px;
-    border-radius: 10px;
-    border: 3px solid rgba(42, 90, 138, 0.6);
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.65);
+    padding: 12px 24px;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .bankroll-label {
-    font-size: 0.75em;
-    color: #b0d0f0;
+    font-size: 0.7em;
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 4px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
 }
 
 .bankroll-amount {
-    font-size: 1.9em;
+    font-size: 1.7em;
     font-weight: 900;
     color: #ffd700;
     text-shadow:
-        0 2px 10px rgba(255, 215, 0, 0.6),
-        0 0 20px rgba(255, 215, 0, 0.3);
+        0 2px 8px rgba(0, 0, 0, 0.8),
+        0 0 15px rgba(255, 215, 0, 0.4);
     letter-spacing: 1px;
 }
 
-/* Dealer Section */
+/* Dealer Section - Table Zone */
 .dealer-section {
     position: absolute;
-    top: 80px;
+    top: 110px;
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
-    max-width: 1000px;
-    padding: 30px 20px;
+    max-width: 850px;
+    padding: 20px;
     text-align: center;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 20px;
 }
 
+/* Rules text - on felt */
 .table-text {
-    margin-bottom: 30px;
+    margin-bottom: 15px;
 }
 
 .table-rule {
-    color: rgba(100, 180, 255, 0.6);
-    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.7em;
     font-style: italic;
-    margin: 5px 0;
+    margin: 3px 0;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .table-rule.main-rule {
-    font-size: 1.1em;
-    color: rgba(100, 180, 255, 0.8);
+    font-size: 0.9em;
+    color: rgba(255, 215, 0, 0.5);
     font-weight: bold;
-    letter-spacing: 4px;
-    margin-bottom: 8px;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
 }
 
 .table-rule.insurance-rule {
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
 .dealer-info {
@@ -315,41 +333,61 @@ input[type="number"] {
     gap: 15px;
 }
 
-/* Player Section */
+/* Player Section - Table Zone */
 .player-section {
     position: absolute;
-    bottom: 180px;
+    bottom: 160px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     justify-content: center;
-    gap: 60px;
+    align-items: flex-end;
+    gap: 70px;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1000px;
+    padding: 0 40px;
 }
 
 .player-position {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 25px;
+    gap: 15px;
+    transition: opacity 0.3s ease;
 }
 
-/* Betting Circles */
+/* Arc layout - center seat lower */
+.player-position[data-position="0"] {
+    transform: translateY(-15px);
+}
+
+.player-position[data-position="1"] {
+    transform: translateY(0);
+}
+
+.player-position[data-position="2"] {
+    transform: translateY(-15px);
+}
+
+/* Fade unused seats during play */
+.player-position.unused {
+    opacity: 0.15;
+    pointer-events: none;
+}
+
+/* Betting Circles - Subtle felt markings */
 .betting-circle {
-    width: 180px;
-    height: 140px;
-    border: 3px solid rgba(100, 180, 255, 0.4);
-    border-radius: 12px;
+    width: 150px;
+    height: 110px;
+    border: 1.5px solid rgba(255, 215, 0, 0.12);
+    border-radius: 50%;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     position: relative;
-    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
-    box-shadow:
-        inset 0 2px 8px rgba(0, 0, 0, 0.4),
-        0 0 0 1px rgba(0, 0, 0, 0.3);
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.01) 0%, transparent 60%);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
     transition: all 0.3s;
     cursor: pointer;
 }
@@ -357,41 +395,44 @@ input[type="number"] {
 .betting-circle::before {
     content: 'CLICK TO PLACE BETS';
     position: absolute;
-    font-size: 0.65em;
-    color: rgba(100, 180, 255, 0.5);
+    font-size: 0.55em;
+    color: rgba(255, 215, 0, 0.25);
     text-align: center;
-    letter-spacing: 1px;
+    letter-spacing: 0.4px;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 140px;
-    line-height: 1.3;
+    width: 110px;
+    line-height: 1.15;
     text-transform: uppercase;
+    font-weight: 500;
 }
 
 .betting-circle.active {
-    border-color: rgba(100, 180, 255, 0.7);
+    border-color: rgba(255, 215, 0, 0.25);
     box-shadow:
-        inset 0 2px 8px rgba(0, 0, 0, 0.4),
-        0 0 15px rgba(100, 180, 255, 0.3);
-    animation: pulse-betting 2s infinite;
+        inset 0 1px 3px rgba(0, 0, 0, 0.2),
+        0 0 8px rgba(255, 215, 0, 0.15);
+    animation: pulse-betting 4s ease-in-out infinite;
 }
 
 @keyframes pulse-betting {
     0%, 100% {
+        border-color: rgba(255, 215, 0, 0.25);
         box-shadow:
-            inset 0 2px 8px rgba(0, 0, 0, 0.4),
-            0 0 15px rgba(100, 180, 255, 0.3);
+            inset 0 1px 3px rgba(0, 0, 0, 0.2),
+            0 0 8px rgba(255, 215, 0, 0.15);
     }
     50% {
+        border-color: rgba(255, 215, 0, 0.3);
         box-shadow:
-            inset 0 2px 8px rgba(0, 0, 0, 0.4),
-            0 0 25px rgba(100, 180, 255, 0.5);
+            inset 0 1px 3px rgba(0, 0, 0, 0.2),
+            0 0 12px rgba(255, 215, 0, 0.2);
     }
 }
 
 .betting-circle:hover {
-    border-color: rgba(100, 180, 255, 0.9);
+    border-color: rgba(255, 215, 0, 0.35);
 }
 
 .circle-label {
@@ -438,28 +479,28 @@ input[type="number"] {
 }
 
 .player-hand.active {
-    border-color: #ffd700;
+    border-color: rgba(255, 215, 0, 0.6);
     box-shadow:
-        0 0 30px rgba(255, 215, 0, 0.8),
-        0 0 60px rgba(255, 215, 0, 0.4),
-        inset 0 0 20px rgba(255, 215, 0, 0.1);
-    background: rgba(255, 215, 0, 0.08);
-    transform: scale(1.05);
-    animation: activeHandPulse 2s ease-in-out infinite;
+        0 0 15px rgba(255, 215, 0, 0.4),
+        0 0 30px rgba(255, 215, 0, 0.2),
+        inset 0 0 10px rgba(255, 215, 0, 0.05);
+    background: rgba(255, 215, 0, 0.04);
+    transform: scale(1.02);
+    animation: activeHandPulse 3s ease-in-out infinite;
 }
 
 @keyframes activeHandPulse {
     0%, 100% {
         box-shadow:
-            0 0 30px rgba(255, 215, 0, 0.8),
-            0 0 60px rgba(255, 215, 0, 0.4),
-            inset 0 0 20px rgba(255, 215, 0, 0.1);
+            0 0 15px rgba(255, 215, 0, 0.4),
+            0 0 30px rgba(255, 215, 0, 0.2),
+            inset 0 0 10px rgba(255, 215, 0, 0.05);
     }
     50% {
         box-shadow:
-            0 0 40px rgba(255, 215, 0, 1),
-            0 0 80px rgba(255, 215, 0, 0.6),
-            inset 0 0 30px rgba(255, 215, 0, 0.15);
+            0 0 20px rgba(255, 215, 0, 0.5),
+            0 0 40px rgba(255, 215, 0, 0.25),
+            inset 0 0 15px rgba(255, 215, 0, 0.08);
     }
 }
 
@@ -589,23 +630,26 @@ input[type="number"] {
     text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
 }
 
-/* Bottom Bar */
+/* Control Zone - Floating Tray */
 .bottom-bar {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background:
-        linear-gradient(180deg, rgba(90, 50, 30, 0.95) 0%, rgba(70, 40, 25, 0.98) 50%, rgba(60, 35, 20, 1) 100%);
-    border-top: 4px solid #8b5a3c;
-    padding: 15px 20px;
+    bottom: 24px;
+    left: 32px;
+    right: 32px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 16px;
+    padding: 16px 24px 20px 24px;
     box-shadow:
-        0 -8px 24px rgba(0, 0, 0, 0.6),
-        inset 0 4px 8px rgba(139, 90, 60, 0.3);
-    min-height: 110px;
+        0 8px 32px rgba(0, 0, 0, 0.8),
+        0 4px 16px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(94, 61, 40, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: auto;
+    max-height: none;
 }
 
 /* Chip Tray */
@@ -797,6 +841,26 @@ input[type="number"] {
         0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
+/* Bet chips in betting circles */
+.bet-chip {
+    width: 60px;
+    height: 60px;
+    cursor: default;
+}
+
+.bet-chip:hover {
+    transform: none;
+    box-shadow:
+        0 8px 16px rgba(0, 0, 0, 0.5),
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.4),
+        inset 0 4px 8px rgba(255, 255, 255, 0.4);
+}
+
+.bet-chip .chip-value {
+    font-size: 0.95em;
+}
+
 /* Betting Controls */
 .betting-controls {
     display: flex;
@@ -918,7 +982,7 @@ input[type="number"] {
 .action-panel {
     width: 100%;
     display: flex;
-    gap: 15px;
+    gap: 12px;
     align-items: center;
     justify-content: center;
     transition: opacity 0.3s ease;
@@ -929,28 +993,28 @@ input[type="number"] {
 }
 
 .action-label {
-    font-size: 1em;
-    font-weight: bold;
-    color: #ffd700;
+    font-size: 0.85em;
+    font-weight: 700;
+    color: rgba(255, 215, 0, 0.8);
     text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-right: 15px;
-    padding-right: 20px;
-    border-right: 3px solid rgba(255, 215, 0, 0.3);
+    letter-spacing: 1.5px;
+    margin-right: 12px;
+    padding-right: 16px;
+    border-right: 2px solid rgba(255, 215, 0, 0.25);
 }
 
 .action-btn {
-    min-width: 110px;
-    padding: 14px 26px;
-    border-radius: 12px;
+    min-width: 95px;
+    padding: 11px 22px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(145deg, #3d5a80 0%, #2c4563 100%);
     border: none;
     box-shadow:
-        0 6px 12px rgba(0, 0, 0, 0.4),
-        0 2px 6px rgba(0, 0, 0, 0.3),
+        0 4px 10px rgba(0, 0, 0, 0.4),
+        0 2px 5px rgba(0, 0, 0, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.2),
         inset 0 -2px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;
@@ -961,7 +1025,7 @@ input[type="number"] {
 /* Primary actions - HIT and STAND */
 .action-btn[data-action="hit"],
 .action-btn[data-action="stand"] {
-    min-width: 130px;
+    min-width: 115px;
     background: linear-gradient(145deg, #4a7ba7 0%, #2a5a8a 100%);
 }
 
@@ -990,27 +1054,66 @@ input[type="number"] {
 }
 
 .action-btn:disabled {
-    background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 100%);
-    cursor: not-allowed;
-    opacity: 0.2;
-    filter: grayscale(1);
+    display: none;
 }
 
 .action-btn .btn-label {
-    font-size: 0.95em;
+    font-size: 0.88em;
     font-weight: 900;
     color: #fff;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.1px;
     text-shadow:
         0 2px 4px rgba(0, 0, 0, 0.6),
         0 1px 2px rgba(0, 0, 0, 0.4);
     font-family: 'Arial Black', 'Arial', sans-serif;
 }
 
-.action-btn:disabled .btn-label {
-    color: #555;
-    text-shadow: none;
+/* Strategy Button */
+.btn-strategy {
+    min-width: 125px;
+    padding: 11px 22px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    box-shadow:
+        0 4px 10px rgba(245, 158, 11, 0.4),
+        0 2px 5px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 10px;
+}
+
+.btn-strategy:hover {
+    background: linear-gradient(145deg, #fbbf24 0%, #f59e0b 100%);
+    transform: translateY(-3px);
+    box-shadow:
+        0 10px 20px rgba(245, 158, 11, 0.5),
+        0 4px 8px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+        0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.btn-strategy:active {
+    transform: translateY(-1px);
+    box-shadow:
+        0 4px 8px rgba(245, 158, 11, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.btn-strategy .btn-label {
+    font-size: 0.88em;
+    font-weight: 900;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    text-shadow:
+        0 1px 2px rgba(255, 255, 255, 0.3);
+    font-family: 'Arial Black', 'Arial', sans-serif;
 }
 
 /* Dealer Message */

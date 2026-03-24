@@ -115,6 +115,11 @@ function enterBettingPhase() {
     chipTray.classList.remove('hidden');
     actionPanel.classList.add('hidden');
     hideDealerMessage();
+
+    // Show all seats during betting
+    document.querySelectorAll('.player-position').forEach(pos => {
+        pos.classList.remove('unused');
+    });
 }
 
 function activateBettingCircles() {
@@ -161,25 +166,25 @@ function updateBettingCircle(position) {
 
     betAmountEl.textContent = betAmount > 0 ? `$${betAmount}` : '$0';
 
-    // Visual chip representation (simplified)
+    // Visual chip representation (matching chip tray style)
     betChipsEl.innerHTML = '';
     if (betAmount > 0) {
+        // Determine chip denomination for color
+        let chipValue = 1;
+        if (betAmount >= 500) chipValue = 500;
+        else if (betAmount >= 100) chipValue = 100;
+        else if (betAmount >= 25) chipValue = 25;
+        else if (betAmount >= 5) chipValue = 5;
+
         const chipEl = document.createElement('div');
-        chipEl.className = 'chip-stack';
-        chipEl.style.cssText = `
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #ffd700 30%, #cc9900 100%);
-            border: 3px solid #8b6508;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #000;
-            font-size: 0.9em;
-        `;
-        chipEl.textContent = `$${betAmount}`;
+        chipEl.className = 'chip bet-chip';
+        chipEl.dataset.value = chipValue;
+
+        const valueEl = document.createElement('span');
+        valueEl.className = 'chip-value';
+        valueEl.textContent = `$${betAmount}`;
+
+        chipEl.appendChild(valueEl);
         betChipsEl.appendChild(chipEl);
     }
 }
@@ -270,6 +275,9 @@ async function dealCards() {
         deactivateBettingCircles();
         dealBtn.disabled = true;
 
+        // Fade unused seats
+        fadeUnusedSeats();
+
         // Deal initial cards
         showDealerMessage('Dealing...', 1500);
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -292,6 +300,17 @@ async function dealCards() {
         console.error('Deal error:', error);
         enterBettingPhase();
     }
+}
+
+function fadeUnusedSeats() {
+    currentBets.forEach((bet, index) => {
+        const position = document.querySelector(`.player-position[data-position="${index}"]`);
+        if (bet < 10) {
+            position.classList.add('unused');
+        } else {
+            position.classList.remove('unused');
+        }
+    });
 }
 
 // Play Hands
@@ -661,3 +680,168 @@ document.querySelectorAll('.action-btn').forEach(btn => {
         takeAction(action);
     });
 });
+
+// Strategy button
+document.getElementById('strategy-btn').addEventListener('click', showBasicStrategy);
+
+// Basic Blackjack Strategy
+function getBasicStrategy(playerTotal, dealerUpcard, isSoft, isPair, canDouble, canSurrender) {
+    const dealerValue = getCardValue(dealerUpcard);
+
+    // Surrender strategy (if available)
+    if (canSurrender) {
+        if (playerTotal === 16 && [9, 10, 11].includes(dealerValue)) {
+            return 'SURRENDER';
+        }
+        if (playerTotal === 15 && dealerValue === 10) {
+            return 'SURRENDER';
+        }
+    }
+
+    // Pair splitting strategy
+    if (isPair) {
+        const cardRank = gameState.hands[currentHandIndex].cards[0].rank;
+
+        // Always split Aces and 8s
+        if (cardRank === 'A' || cardRank === '8') {
+            return 'SPLIT';
+        }
+
+        // Never split 5s and 10s
+        if (cardRank === '5' || ['10', 'J', 'Q', 'K'].includes(cardRank)) {
+            return canDouble ? 'DOUBLE' : 'HIT';
+        }
+
+        // Split 2s, 3s, 7s against dealer 2-7
+        if (['2', '3', '7'].includes(cardRank) && dealerValue >= 2 && dealerValue <= 7) {
+            return 'SPLIT';
+        }
+
+        // Split 4s against dealer 5-6
+        if (cardRank === '4' && dealerValue >= 5 && dealerValue <= 6) {
+            return 'SPLIT';
+        }
+
+        // Split 6s against dealer 2-6
+        if (cardRank === '6' && dealerValue >= 2 && dealerValue <= 6) {
+            return 'SPLIT';
+        }
+
+        // Split 9s against dealer 2-9 except 7
+        if (cardRank === '9' && dealerValue >= 2 && dealerValue <= 9 && dealerValue !== 7) {
+            return 'SPLIT';
+        }
+    }
+
+    // Soft hand strategy
+    if (isSoft) {
+        // Soft 19-21: always stand
+        if (playerTotal >= 19) {
+            return 'STAND';
+        }
+
+        // Soft 18: double against 2-6, hit against 9-A, stand otherwise
+        if (playerTotal === 18) {
+            if (canDouble && dealerValue >= 2 && dealerValue <= 6) {
+                return 'DOUBLE';
+            }
+            if (dealerValue >= 9) {
+                return 'HIT';
+            }
+            return 'STAND';
+        }
+
+        // Soft 17: double against 3-6, hit otherwise
+        if (playerTotal === 17) {
+            if (canDouble && dealerValue >= 3 && dealerValue <= 6) {
+                return 'DOUBLE';
+            }
+            return 'HIT';
+        }
+
+        // Soft 13-16: double against 5-6, hit otherwise
+        if (playerTotal >= 13 && playerTotal <= 16) {
+            if (canDouble && dealerValue >= 5 && dealerValue <= 6) {
+                return 'DOUBLE';
+            }
+            return 'HIT';
+        }
+
+        // Other soft hands: hit
+        return 'HIT';
+    }
+
+    // Hard hand strategy
+    if (playerTotal >= 17) {
+        return 'STAND';
+    }
+
+    if (playerTotal >= 13 && playerTotal <= 16) {
+        return dealerValue >= 2 && dealerValue <= 6 ? 'STAND' : 'HIT';
+    }
+
+    if (playerTotal === 12) {
+        return dealerValue >= 4 && dealerValue <= 6 ? 'STAND' : 'HIT';
+    }
+
+    if (playerTotal === 11) {
+        return canDouble ? 'DOUBLE' : 'HIT';
+    }
+
+    if (playerTotal === 10) {
+        return (canDouble && dealerValue <= 9) ? 'DOUBLE' : 'HIT';
+    }
+
+    if (playerTotal === 9) {
+        return (canDouble && dealerValue >= 3 && dealerValue <= 6) ? 'DOUBLE' : 'HIT';
+    }
+
+    return 'HIT';
+}
+
+function showBasicStrategy() {
+    if (currentHandIndex >= gameState.hands.length) return;
+
+    const hand = gameState.hands[currentHandIndex];
+    const dealerUpcard = gameState.dealer.cards.find(card => card.rank !== '??');
+
+    if (!dealerUpcard) return;
+
+    const isPair = hand.cards.length === 2 && hand.cards[0].rank === hand.cards[1].rank;
+    const canDouble = hand.allowed_actions.includes('double');
+    const canSurrender = hand.allowed_actions.includes('surrender');
+    const canSplit = hand.allowed_actions.includes('split');
+
+    let recommendation = getBasicStrategy(
+        hand.total,
+        dealerUpcard.rank,
+        hand.is_soft,
+        isPair && canSplit,
+        canDouble,
+        canSurrender
+    );
+
+    // Check if recommended action is available
+    if (!hand.allowed_actions.includes(recommendation.toLowerCase())) {
+        // Fallback logic
+        if (recommendation === 'DOUBLE' && !canDouble) {
+            recommendation = 'HIT';
+        } else if (recommendation === 'SPLIT' && !canSplit) {
+            recommendation = getBasicStrategy(hand.total, dealerUpcard.rank, hand.is_soft, false, canDouble, canSurrender);
+        } else if (recommendation === 'SURRENDER' && !canSurrender) {
+            recommendation = 'HIT';
+        }
+    }
+
+    // Show recommendation with explanation
+    let explanation = '';
+    if (hand.is_soft) {
+        explanation = `Soft ${hand.total} vs Dealer ${dealerUpcard.display}`;
+    } else if (isPair && canSplit) {
+        explanation = `Pair of ${hand.cards[0].display}'s vs Dealer ${dealerUpcard.display}`;
+    } else {
+        explanation = `Hard ${hand.total} vs Dealer ${dealerUpcard.display}`;
+    }
+
+    showDealerMessage(`💡 ${explanation}\nOptimal: ${recommendation}`, 4000);
+}
