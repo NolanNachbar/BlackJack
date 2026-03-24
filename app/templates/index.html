@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Blackjack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Start Modal (only shown on first load) -->
+    <div id="start-modal" class="modal">
+        <div class="modal-content">
+            <h2>Welcome to Casino Blackjack</h2>
+            <p>Table Limits: $10 - $500 per hand</p>
+            <div class="input-group">
+                <label for="starting-bankroll">Buy In:</label>
+                <input type="number" id="starting-bankroll" value="1000" min="10" step="10">
+            </div>
+            <button id="start-game-btn" class="btn btn-primary">Sit Down at Table</button>
+        </div>
+    </div>
+
+    <!-- Permanent Casino Table -->
+    <div id="casino-table" class="casino-table hidden">
+        <!-- Table Header -->
+        <div class="table-header">
+            <div class="table-sign">
+                <div class="table-title">BLACKJACK</div>
+                <div class="table-limits">Minimum $10 - Maximum $500</div>
+            </div>
+            <div class="bankroll-display">
+                <div class="bankroll-label">Your Chips</div>
+                <div class="bankroll-amount" id="bankroll">$0</div>
+            </div>
+        </div>
+
+        <!-- Dealer Area (always visible) -->
+        <div class="dealer-section">
+            <div class="table-text">
+                <div class="table-rule main-rule">BLACKJACK PAYS 3 TO 2</div>
+                <div class="table-rule">Dealer must stand on 17 and must draw to 16</div>
+                <div class="table-rule insurance-rule">INSURANCE PAYS 2 TO 1</div>
+            </div>
+            <div class="dealer-info">
+                <div class="dealer-label">DEALER</div>
+                <div class="dealer-count" id="dealer-count"></div>
+            </div>
+            <div id="dealer-hand" class="dealer-hand">
+                <div class="cards" id="dealer-cards"></div>
+            </div>
+        </div>
+
+        <!-- Player Positions (always visible) -->
+        <div class="player-section">
+            <!-- Position 1 -->
+            <div class="player-position" data-position="0">
+                <div class="betting-circle" data-position="0">
+                    <div class="circle-label">1</div>
+                    <div class="bet-chips" data-position="0"></div>
+                    <div class="bet-amount" data-position="0">$0</div>
+                </div>
+                <div class="player-hand" data-position="0">
+                    <div class="cards"></div>
+                    <div class="hand-total"></div>
+                    <div class="hand-status"></div>
+                </div>
+            </div>
+
+            <!-- Position 2 -->
+            <div class="player-position" data-position="1">
+                <div class="betting-circle" data-position="1">
+                    <div class="circle-label">2</div>
+                    <div class="bet-chips" data-position="1"></div>
+                    <div class="bet-amount" data-position="1">$0</div>
+                </div>
+                <div class="player-hand" data-position="1">
+                    <div class="cards"></div>
+                    <div class="hand-total"></div>
+                    <div class="hand-status"></div>
+                </div>
+            </div>
+
+            <!-- Position 3 -->
+            <div class="player-position" data-position="2">
+                <div class="betting-circle" data-position="2">
+                    <div class="circle-label">3</div>
+                    <div class="bet-chips" data-position="2"></div>
+                    <div class="bet-amount" data-position="2">$0</div>
+                </div>
+                <div class="player-hand" data-position="2">
+                    <div class="cards"></div>
+                    <div class="hand-total"></div>
+                    <div class="hand-status"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Control Bar (switches between betting and action modes) -->
+        <div class="bottom-bar">
+            <!-- Chip Tray (visible during betting phase) -->
+            <div id="chip-tray" class="chip-tray">
+                <div class="chip-controls-row">
+                    <div class="chip-adjuster">
+                        <button class="chip-btn minus-btn" id="decrease-chip">−</button>
+                        <div class="selected-chip-display">
+                            <div class="chip selected-chip" id="selected-chip-visual" data-value="25">
+                                <span class="chip-value">$25</span>
+                            </div>
+                        </div>
+                        <button class="chip-btn plus-btn" id="increase-chip">+</button>
+                    </div>
+
+                    <div class="chip-selector">
+                        <div class="chip" data-value="1">
+                            <span class="chip-value">$1</span>
+                        </div>
+                        <div class="chip" data-value="5">
+                            <span class="chip-value">$5</span>
+                        </div>
+                        <div class="chip" data-value="25">
+                            <span class="chip-value">$25</span>
+                        </div>
+                        <div class="chip" data-value="100">
+                            <span class="chip-value">$100</span>
+                        </div>
+                        <div class="chip" data-value="500">
+                            <span class="chip-value">$500</span>
+                        </div>
+                    </div>
+
+                    <div class="betting-controls">
+                        <button id="clear-bets-btn" class="btn btn-secondary">CLEAR</button>
+                        <button id="rebet-btn" class="btn btn-secondary">REBET</button>
+                        <button id="deal-btn" class="btn btn-deal" disabled>DEAL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Panel (visible during play) -->
+            <div id="action-panel" class="action-panel hidden">
+                <div class="action-label">HAND 1</div>
+                <button class="btn action-btn" data-action="stand" title="Stand">
+                    <span class="btn-label">STAND</span>
+                </button>
+                <button class="btn action-btn" data-action="hit" title="Hit">
+                    <span class="btn-label">HIT</span>
+                </button>
+                <button class="btn action-btn" data-action="double" title="Double">
+                    <span class="btn-label">DOUBLE</span>
+                </button>
+                <button class="btn action-btn" data-action="split" title="Split" disabled>
+                    <span class="btn-label">SPLIT</span>
+                </button>
+                <button class="btn action-btn" data-action="surrender" title="Surrender">
+                    <span class="btn-label">SURRENDER</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dealer Message (shown during dealer actions and results) -->
+        <div id="dealer-message" class="dealer-message hidden"></div>
+    </div>
+
+    <!-- Message Area -->
+    <div id="message-area" class="message-area"></div>
+
+    <script src="{{ url_for('static', filename='game.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+"""Blackjack Flask application package."""

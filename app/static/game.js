@@ -1,0 +1,663 @@
+// Casino Blackjack - Continuous Table Experience
+
+let gameState = null;
+let currentHandIndex = 0;
+let selectedChipValue = 25; // Default chip selection
+let currentBets = [0, 0, 0]; // Bets for positions 0, 1, 2
+let lastBets = [0, 0, 0]; // For rebet functionality
+
+// DOM Elements
+const startModal = document.getElementById('start-modal');
+const casinoTable = document.getElementById('casino-table');
+const messageArea = document.getElementById('message-area');
+const bankrollDisplay = document.getElementById('bankroll');
+const dealerCards = document.getElementById('dealer-cards');
+const dealerCount = document.getElementById('dealer-count');
+const actionPanel = document.getElementById('action-panel');
+const chipTray = document.getElementById('chip-tray');
+const dealerMessage = document.getElementById('dealer-message');
+
+const startGameBtn = document.getElementById('start-game-btn');
+const clearBetsBtn = document.getElementById('clear-bets-btn');
+const rebetBtn = document.getElementById('rebet-btn');
+const dealBtn = document.getElementById('deal-btn');
+
+// Utility Functions
+function showMessage(msg, type = 'info') {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    messageDiv.textContent = msg;
+    messageArea.appendChild(messageDiv);
+
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 4000);
+}
+
+function showDealerMessage(msg, duration = 2000) {
+    dealerMessage.textContent = msg;
+    dealerMessage.classList.remove('hidden');
+
+    if (duration > 0) {
+        setTimeout(() => {
+            dealerMessage.classList.add('hidden');
+        }, duration);
+    }
+}
+
+function hideDealerMessage() {
+    dealerMessage.classList.add('hidden');
+}
+
+function updateBankroll() {
+    if (gameState) {
+        bankrollDisplay.textContent = `$${gameState.bankroll}`;
+    }
+}
+
+// API Calls
+async function apiCall(endpoint, data = null) {
+    const options = {
+        method: data ? 'POST' : 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    };
+
+    if (data) {
+        options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(`/api${endpoint}`, options);
+    const result = await response.json();
+
+    if (!response.ok) {
+        showMessage(result.message || 'An error occurred', 'error');
+        throw new Error(result.message);
+    }
+
+    return result;
+}
+
+// Game Initialization
+async function startGame() {
+    const bankroll = parseInt(document.getElementById('starting-bankroll').value);
+
+    if (bankroll < 10) {
+        showMessage('Buy-in must be at least $10', 'error');
+        return;
+    }
+
+    try {
+        const result = await apiCall('/start', { bankroll });
+        gameState = result.state;
+        updateBankroll();
+
+        startModal.classList.add('hidden');
+        casinoTable.classList.remove('hidden');
+
+        enterBettingPhase();
+        showMessage('Welcome to the table! Place your bets.', 'success');
+    } catch (error) {
+        console.error('Start game error:', error);
+    }
+}
+
+// Betting Phase
+function enterBettingPhase() {
+    currentBets = [0, 0, 0];
+    clearAllCards();
+    clearAllBettingCircles();
+    activateBettingCircles();
+    updateDealButton();
+
+    // Show chip tray, hide action panel
+    chipTray.classList.remove('hidden');
+    actionPanel.classList.add('hidden');
+    hideDealerMessage();
+}
+
+function activateBettingCircles() {
+    document.querySelectorAll('.betting-circle').forEach(circle => {
+        circle.classList.add('active');
+    });
+}
+
+function deactivateBettingCircles() {
+    document.querySelectorAll('.betting-circle').forEach(circle => {
+        circle.classList.remove('active');
+    });
+}
+
+function clearAllCards() {
+    // Clear dealer cards
+    dealerCards.innerHTML = '';
+    dealerCount.textContent = '';
+
+    // Clear all player hands
+    document.querySelectorAll('.player-hand .cards').forEach(el => el.innerHTML = '');
+    document.querySelectorAll('.player-hand .hand-total').forEach(el => el.textContent = '');
+    document.querySelectorAll('.player-hand .hand-status').forEach(el => {
+        el.textContent = '';
+        el.className = 'hand-status';
+    });
+}
+
+function clearAllBettingCircles() {
+    currentBets = [0, 0, 0];
+    document.querySelectorAll('.bet-chips').forEach(el => el.innerHTML = '');
+    document.querySelectorAll('.bet-amount').forEach(el => el.textContent = '$0');
+}
+
+function updateBettingCircle(position) {
+    const betAmount = currentBets[position];
+    const betAmountEl = document.querySelector(`.bet-amount[data-position="${position}"]`);
+    const betChipsEl = document.querySelector(`.bet-chips[data-position="${position}"]`);
+
+    if (!betAmountEl || !betChipsEl) {
+        console.error(`Betting circle elements not found for position ${position}`);
+        return;
+    }
+
+    betAmountEl.textContent = betAmount > 0 ? `$${betAmount}` : '$0';
+
+    // Visual chip representation (simplified)
+    betChipsEl.innerHTML = '';
+    if (betAmount > 0) {
+        const chipEl = document.createElement('div');
+        chipEl.className = 'chip-stack';
+        chipEl.style.cssText = `
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffd700 30%, #cc9900 100%);
+            border: 3px solid #8b6508;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #000;
+            font-size: 0.9em;
+        `;
+        chipEl.textContent = `$${betAmount}`;
+        betChipsEl.appendChild(chipEl);
+    }
+}
+
+function placeBetOnPosition(position) {
+    if (!gameState) {
+        showMessage('Please start the game first', 'error');
+        return;
+    }
+
+    if (gameState.phase !== 'betting') return;
+
+    const newBet = currentBets[position] + selectedChipValue;
+
+    // Validate bet
+    if (newBet > 500) {
+        showMessage('Maximum bet per hand is $500', 'error');
+        return;
+    }
+
+    const totalBets = currentBets.reduce((sum, bet) => sum + bet, 0) - currentBets[position] + newBet;
+    if (totalBets > gameState.bankroll) {
+        showMessage('Insufficient chips', 'error');
+        return;
+    }
+
+    currentBets[position] = newBet;
+    updateBettingCircle(position);
+    updateDealButton();
+}
+
+function clearBets() {
+    if (!gameState) return;
+
+    currentBets = [0, 0, 0];
+    document.querySelectorAll('.bet-chips').forEach(el => el.innerHTML = '');
+    document.querySelectorAll('.bet-amount').forEach(el => el.textContent = '$0');
+    updateDealButton();
+}
+
+function rebet() {
+    if (!gameState) {
+        showMessage('Please start the game first', 'error');
+        return;
+    }
+
+    if (lastBets.every(bet => bet === 0)) {
+        showMessage('No previous bets to repeat', 'error');
+        return;
+    }
+
+    const totalBet = lastBets.reduce((sum, bet) => sum + bet, 0);
+    if (totalBet > gameState.bankroll) {
+        showMessage('Insufficient chips for rebet', 'error');
+        return;
+    }
+
+    currentBets = [...lastBets];
+    currentBets.forEach((bet, pos) => updateBettingCircle(pos));
+    updateDealButton();
+}
+
+function updateDealButton() {
+    const totalBet = currentBets.reduce((sum, bet) => sum + bet, 0);
+    const validBets = currentBets.filter(bet => bet >= 10);
+
+    dealBtn.disabled = totalBet === 0 || validBets.length === 0;
+}
+
+// Deal Cards
+async function dealCards() {
+    const bets = currentBets.filter(bet => bet >= 10);
+
+    if (bets.length === 0) {
+        showMessage('Place at least one bet of $10 or more', 'error');
+        return;
+    }
+
+    // Save for rebet
+    lastBets = [...currentBets];
+
+    try {
+        // Place bets
+        const betResult = await apiCall('/bet', { bets });
+        gameState = betResult.state;
+        updateBankroll();
+
+        deactivateBettingCircles();
+        dealBtn.disabled = true;
+
+        // Deal initial cards
+        showDealerMessage('Dealing...', 1500);
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const dealResult = await apiCall('/deal', {});
+        gameState = dealResult.state;
+
+        renderGameState();
+
+        if (dealResult.dealer_blackjack) {
+            showDealerMessage('Dealer has Blackjack!', 3000);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await settleBets();
+        } else {
+            // Start playing hands
+            currentHandIndex = 0;
+            playCurrentHand();
+        }
+    } catch (error) {
+        console.error('Deal error:', error);
+        enterBettingPhase();
+    }
+}
+
+// Play Hands
+function playCurrentHand() {
+    if (currentHandIndex >= gameState.hands.length) {
+        // All hands played, dealer's turn
+        playDealer();
+        return;
+    }
+
+    const hand = gameState.hands[currentHandIndex];
+
+    // Skip if already finished or blackjack
+    if (hand.finished || hand.is_blackjack || hand.surrendered || hand.is_bust) {
+        currentHandIndex++;
+        playCurrentHand();
+        return;
+    }
+
+    highlightCurrentHand();
+    showActionPanel();
+}
+
+function showActionPanel() {
+    if (currentHandIndex >= gameState.hands.length) return;
+
+    const hand = gameState.hands[currentHandIndex];
+    const allowedActions = hand.allowed_actions || [];
+
+    if (allowedActions.length === 0) {
+        currentHandIndex++;
+        playCurrentHand();
+        return;
+    }
+
+    // Hide chip tray, show action panel
+    chipTray.classList.add('hidden');
+    actionPanel.classList.remove('hidden');
+
+    // Enable/disable action buttons based on allowed actions
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        const action = btn.dataset.action;
+        btn.disabled = !allowedActions.includes(action);
+    });
+}
+
+function highlightCurrentHand() {
+    document.querySelectorAll('.player-hand').forEach((el, idx) => {
+        if (idx === currentHandIndex) {
+            el.classList.add('active');
+        } else {
+            el.classList.remove('active');
+        }
+    });
+}
+
+async function takeAction(action) {
+    actionPanel.classList.add('hidden');
+
+    try {
+        const result = await apiCall('/action', {
+            hand_index: currentHandIndex,
+            action: action
+        });
+
+        gameState = result.state;
+        renderGameState();
+
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        currentHandIndex++;
+        playCurrentHand();
+    } catch (error) {
+        console.error('Action error:', error);
+        showActionPanel();
+    }
+}
+
+async function playDealer() {
+    actionPanel.classList.add('hidden');
+
+    // Check if all hands bust/surrendered
+    const allHandsDone = gameState.hands.every(hand => hand.is_bust || hand.surrendered);
+    if (allHandsDone) {
+        showDealerMessage('All hands bust or surrendered', 2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await settleBets();
+        return;
+    }
+
+    showDealerMessage('Dealer plays...', 1500);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    try {
+        const result = await apiCall('/dealer', {});
+        gameState = result.state;
+        renderGameState();
+
+        if (result.dealer_bust) {
+            showDealerMessage('Dealer Busts!', 2000);
+        } else {
+            showDealerMessage(`Dealer stands at ${gameState.dealer.total}`, 2000);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await settleBets();
+    } catch (error) {
+        console.error('Dealer error:', error);
+    }
+}
+
+async function settleBets() {
+    try {
+        const result = await apiCall('/settle', {});
+        gameState = result.state;
+        updateBankroll();
+        renderGameState();
+
+        // Show results
+        showResults(result.results);
+
+        // Return to betting phase after delay
+        await new Promise(resolve => setTimeout(resolve, 4000));
+
+        if (gameState.phase === 'game_over') {
+            showDealerMessage('Game Over - Insufficient chips', 0);
+            showMessage('Game over! Reload to play again.', 'error');
+        } else {
+            enterBettingPhase();
+            showMessage('Place your bets', 'success');
+        }
+    } catch (error) {
+        console.error('Settle error:', error);
+    }
+}
+
+function showResults(results) {
+    let messages = [];
+    results.forEach(result => {
+        let msg = `Hand ${result.hand}: `;
+        switch (result.outcome) {
+            case 'blackjack':
+                msg += `BLACKJACK! Win $${result.payout}`;
+                break;
+            case 'win':
+                msg += `WIN! $${result.payout}`;
+                break;
+            case 'push':
+                msg += `PUSH - Return $${result.payout}`;
+                break;
+            case 'loss':
+            case 'bust':
+                msg += `LOSE`;
+                break;
+            case 'surrender':
+                msg += `SURRENDER - Return $${result.payout}`;
+                break;
+        }
+        messages.push(msg);
+    });
+
+    showDealerMessage(messages.join(' | '), 4000);
+}
+
+// Rendering
+function renderGameState() {
+    if (!gameState) return;
+
+    // Render dealer hand
+    renderDealerHand();
+
+    // Render player hands (only active ones with bets)
+    gameState.hands.forEach((hand, index) => {
+        renderPlayerHand(hand, index);
+    });
+}
+
+function renderDealerHand() {
+    const currentCardCount = dealerCards.children.length;
+    const newCardCount = gameState.dealer.cards.length;
+
+    // Only add new cards, don't re-render existing ones
+    if (newCardCount > currentCardCount) {
+        for (let i = currentCardCount; i < newCardCount; i++) {
+            const cardEl = createCardElement(gameState.dealer.cards[i]);
+            dealerCards.appendChild(cardEl);
+        }
+    } else if (newCardCount < currentCardCount) {
+        // Cards were removed (new round), clear and re-render all
+        dealerCards.innerHTML = '';
+        gameState.dealer.cards.forEach(card => {
+            const cardEl = createCardElement(card);
+            dealerCards.appendChild(cardEl);
+        });
+    }
+
+    // Update dealer count display
+    if (gameState.dealer.cards.length > 0) {
+        if (gameState.dealer.total !== null) {
+            // All cards visible - show total with soft hand notation
+            if (gameState.dealer.is_soft && gameState.dealer.total <= 21) {
+                // Soft hand: show as low/high (e.g., "6/16")
+                const lowTotal = gameState.dealer.total - 10;
+                dealerCount.textContent = `${lowTotal}/${gameState.dealer.total}`;
+            } else {
+                dealerCount.textContent = gameState.dealer.total;
+            }
+        } else {
+            // One card hidden - show visible card value
+            const visibleCard = gameState.dealer.cards.find(card => card.rank !== '??');
+            if (visibleCard) {
+                dealerCount.textContent = getCardValue(visibleCard.rank);
+            } else {
+                dealerCount.textContent = '?';
+            }
+        }
+    } else {
+        dealerCount.textContent = '';
+    }
+}
+
+function getCardValue(rank) {
+    if (rank === 'A') return 11;
+    if (['J', 'Q', 'K'].includes(rank)) return 10;
+    return parseInt(rank);
+}
+
+function renderPlayerHand(hand, index) {
+    const position = index;
+    const cardsContainer = document.querySelector(`.player-hand[data-position="${position}"] .cards`);
+    const totalContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-total`);
+    const statusContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-status`);
+
+    if (!cardsContainer) return;
+
+    const currentCardCount = cardsContainer.children.length;
+    const newCardCount = hand.cards.length;
+
+    // Only add new cards, don't re-render existing ones
+    if (newCardCount > currentCardCount) {
+        for (let i = currentCardCount; i < newCardCount; i++) {
+            const cardEl = createCardElement(hand.cards[i]);
+            cardsContainer.appendChild(cardEl);
+        }
+    } else if (newCardCount < currentCardCount) {
+        // Cards were removed (new round), clear and re-render all
+        cardsContainer.innerHTML = '';
+        hand.cards.forEach(card => {
+            const cardEl = createCardElement(card);
+            cardsContainer.appendChild(cardEl);
+        });
+    }
+
+    if (hand.total !== null) {
+        if (hand.is_soft && hand.total <= 21) {
+            // Soft hand: show as low/high (e.g., "6/16")
+            const lowTotal = hand.total - 10;
+            totalContainer.textContent = `${lowTotal}/${hand.total}`;
+        } else {
+            totalContainer.textContent = hand.total;
+        }
+    } else {
+        totalContainer.textContent = '';
+    }
+
+    statusContainer.textContent = '';
+    statusContainer.className = 'hand-status';
+
+    if (hand.is_blackjack) {
+        statusContainer.textContent = 'BLACKJACK';
+        statusContainer.classList.add('blackjack');
+    } else if (hand.is_bust) {
+        statusContainer.textContent = 'BUST';
+        statusContainer.classList.add('bust');
+    } else if (hand.surrendered) {
+        statusContainer.textContent = 'SURRENDERED';
+    } else if (hand.doubled) {
+        statusContainer.textContent = 'DOUBLED';
+    }
+}
+
+function createCardElement(card) {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'card';
+
+    if (card.suit === '♥' || card.suit === '♦') {
+        cardEl.classList.add('red');
+    }
+
+    cardEl.textContent = card.display;
+    return cardEl;
+}
+
+// Event Listeners
+startGameBtn.addEventListener('click', startGame);
+dealBtn.addEventListener('click', dealCards);
+clearBetsBtn.addEventListener('click', clearBets);
+rebetBtn.addEventListener('click', rebet);
+
+// Chip values array for +/- navigation
+const chipValues = [1, 5, 25, 100, 500];
+let currentChipIndex = 2; // Start at $25
+
+function updateSelectedChip() {
+    selectedChipValue = chipValues[currentChipIndex];
+
+    // Update visual chip display
+    const selectedChipVisual = document.getElementById('selected-chip-visual');
+    selectedChipVisual.dataset.value = selectedChipValue;
+    selectedChipVisual.querySelector('.chip-value').textContent = `$${selectedChipValue}`;
+
+    // Update chip colors based on value
+    selectedChipVisual.className = 'chip selected-chip';
+
+    // Visual feedback on all chips
+    document.querySelectorAll('.chip-selector .chip').forEach(c => c.style.opacity = '0.6');
+    const activeChip = document.querySelector(`.chip-selector .chip[data-value="${selectedChipValue}"]`);
+    if (activeChip) activeChip.style.opacity = '1';
+}
+
+// Chip selection
+document.querySelectorAll('.chip-selector .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        selectedChipValue = parseInt(chip.dataset.value);
+        currentChipIndex = chipValues.indexOf(selectedChipValue);
+        updateSelectedChip();
+    });
+});
+
+// Plus/minus buttons
+document.getElementById('increase-chip').addEventListener('click', () => {
+    if (currentChipIndex < chipValues.length - 1) {
+        currentChipIndex++;
+        updateSelectedChip();
+    }
+});
+
+document.getElementById('decrease-chip').addEventListener('click', () => {
+    if (currentChipIndex > 0) {
+        currentChipIndex--;
+        updateSelectedChip();
+    }
+});
+
+// Set default chip selection
+updateSelectedChip();
+
+// Betting circle clicks
+document.querySelectorAll('.betting-circle').forEach(circle => {
+    circle.addEventListener('click', (e) => {
+        const position = parseInt(circle.dataset.position);
+        console.log('Clicked betting circle, position:', position, 'dataset:', circle.dataset);
+
+        if (isNaN(position)) {
+            console.error('Invalid position from betting circle:', circle);
+            return;
+        }
+
+        placeBetOnPosition(position);
+    });
+});
+
+// Action buttons
+document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        takeAction(action);
+    });
+});
