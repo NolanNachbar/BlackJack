@@ -701,19 +701,19 @@ async function animateDealerPlay() {
     if (holeCard && holeCard.classList.contains('card-back')) {
         flipCardToFront(holeCard, gameState.dealer.cards[0]);
         playCardSound();
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 1200));
 
         // Update dealer count after revealing hole card
         renderDealerHand();
     }
 
-    // Deal additional cards one at a time with delay
+    // Deal additional cards one at a time with delay from deck
     const initialCardCount = dealerCards.children.length;
     for (let i = initialCardCount; i < gameState.dealer.cards.length; i++) {
-        const cardEl = createCardElement(gameState.dealer.cards[i]);
+        const cardEl = createCardElementFromDeck(gameState.dealer.cards[i]);
         dealerCards.appendChild(cardEl);
         playCardSound();
-        await new Promise(resolve => setTimeout(resolve, 600));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Update dealer count after each card
         renderDealerHand();
@@ -1004,6 +1004,24 @@ function renderPlayerHand(hand, index) {
 function createCardElement(card) {
     const cardEl = document.createElement('div');
     cardEl.className = 'card';
+
+    // Check if this is a hidden card
+    if (card.rank === '??') {
+        cardEl.classList.add('card-back');
+        cardEl.textContent = '';
+    } else {
+        if (card.suit === '♥' || card.suit === '♦') {
+            cardEl.classList.add('red');
+        }
+        cardEl.textContent = card.display;
+    }
+
+    return cardEl;
+}
+
+function createCardElementFromDeck(card) {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'card from-deck';
 
     // Check if this is a hidden card
     if (card.rank === '??') {

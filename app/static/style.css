@@ -342,9 +342,75 @@ input[type="number"] {
 .dealer-hand {
     min-height: 120px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 15px;
+    justify-content: center;
+    gap: 30px;
+    position: relative;
+}
+
+/* Dealer Deck */
+.dealer-deck {
+    position: relative;
+    width: 70px;
+    height: 90px;
+    flex-shrink: 0;
+}
+
+.deck-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 70px;
+    height: 90px;
+    background: linear-gradient(145deg, #1a4a7a 0%, #0d3a5f 100%);
+    border-radius: 8px;
+    border: 2px solid #d8d8d8;
+    box-shadow:
+        0 8px 16px rgba(0, 0, 0, 0.25),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.deck-card::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    background:
+        repeating-conic-gradient(
+            from 45deg at 50% 50%,
+            rgba(255, 215, 0, 0.15) 0deg 45deg,
+            rgba(255, 255, 255, 0.05) 45deg 90deg
+        );
+}
+
+.deck-card::after {
+    content: '♠ ♥ ♦ ♣';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.7em;
+    color: rgba(255, 215, 0, 0.4);
+    letter-spacing: 3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.deck-card:nth-child(1) { transform: translateY(0px); }
+.deck-card:nth-child(2) { transform: translateY(-2px); }
+.deck-card:nth-child(3) { transform: translateY(-4px); }
+.deck-card:nth-child(4) { transform: translateY(-6px); }
+.deck-card:nth-child(5) { transform: translateY(-8px); }
+
+#dealer-cards {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-height: 90px;
 }
 
 /* Player Section - Table Zone */
@@ -611,6 +677,30 @@ input[type="number"] {
         transform: translateY(0) translateX(0) scale(1);
         opacity: 1;
     }
+}
+
+/* Animation for cards drawn from dealer deck */
+@keyframes dealFromDeck {
+    0% {
+        transform: translate(0, 0) scale(0.9);
+        opacity: 0;
+    }
+    30% {
+        transform: translate(20px, 10px) scale(0.95) rotate(5deg);
+        opacity: 0.8;
+    }
+    60% {
+        transform: translate(40px, 5px) scale(1.05) rotate(-2deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+.card.from-deck {
+    animation: dealFromDeck 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Card back styling */
@@ -1606,7 +1696,39 @@ input[type="number"] {
 
     .dealer-hand {
         min-height: 60px;
-        gap: 4px;
+        gap: 15px;
+    }
+
+    .dealer-deck {
+        width: 44px;
+        height: 60px;
+    }
+
+    .deck-card {
+        width: 44px;
+        height: 60px;
+        border-radius: 6px;
+        border-width: 1.5px;
+    }
+
+    .deck-card::before {
+        inset: 4px;
+        border-width: 1.5px;
+    }
+
+    .deck-card::after {
+        font-size: 0.55em;
+        letter-spacing: 2px;
+    }
+
+    .deck-card:nth-child(1) { transform: translateY(0px); }
+    .deck-card:nth-child(2) { transform: translateY(-1px); }
+    .deck-card:nth-child(3) { transform: translateY(-2px); }
+    .deck-card:nth-child(4) { transform: translateY(-3px); }
+    .deck-card:nth-child(5) { transform: translateY(-4px); }
+
+    #dealer-cards {
+        min-height: 55px;
     }
 
     /* Cards - increased size 15% */
