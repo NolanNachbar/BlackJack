@@ -144,6 +144,10 @@ class BlackjackGame:
         if hand.finished or hand.is_bust() or hand.surrendered:
             return []
 
+        # No actions if hand is exactly 21 (should be auto-finished)
+        if hand.total() == 21:
+            return []
+
         actions = ["hit", "stand"]
 
         split_count = self.split_counts[hand_index]
@@ -196,6 +200,10 @@ class BlackjackGame:
             if hand.is_bust():
                 hand.finished = True
                 return {"success": True, "message": "Busted!", "bust": True}
+            # Auto-stand on 21
+            if hand.total() == 21:
+                hand.finished = True
+                return {"success": True, "message": "21! Auto-standing"}
             return {"success": True, "message": "Hit"}
 
         elif action == "stand":
@@ -264,9 +272,12 @@ class BlackjackGame:
             self.phase = "settlement"
             return {"success": True, "message": "All hands bust/surrendered, dealer doesn't play"}
 
-        # Dealer plays
-        while self.dealer_should_hit():
+        # Dealer plays with safeguard against infinite loops
+        max_cards = 12  # Safety limit to prevent infinite loops
+        cards_drawn = 0
+        while self.dealer_should_hit() and cards_drawn < max_cards and not self.dealer.is_bust():
             self.dealer.add_card(self.shoe.draw())
+            cards_drawn += 1
 
         self.phase = "settlement"
         if self.dealer.is_bust():

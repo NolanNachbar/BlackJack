@@ -390,8 +390,16 @@ async function takeAction(action) {
 
         await new Promise(resolve => setTimeout(resolve, 400));
 
-        currentHandIndex++;
-        playCurrentHand();
+        // Check if the current hand still has actions available
+        const currentHand = gameState.hands[currentHandIndex];
+        if (currentHand && !currentHand.finished && !currentHand.is_bust && !currentHand.surrendered) {
+            // Hand is still active, show actions again (allows multiple hits)
+            playCurrentHand();
+        } else {
+            // Hand is finished, move to next
+            currentHandIndex++;
+            playCurrentHand();
+        }
     } catch (error) {
         console.error('Action error:', error);
         showActionPanel();
