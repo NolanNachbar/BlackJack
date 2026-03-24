@@ -18,6 +18,11 @@ const actionPanel = document.getElementById('action-panel');
 const chipTray = document.getElementById('chip-tray');
 const dealerMessage = document.getElementById('dealer-message');
 const bustOverlay = document.getElementById('bust-overlay');
+const customModal = document.getElementById('custom-modal');
+const modalTitle = document.getElementById('modal-title');
+const modalMessage = document.getElementById('modal-message');
+const modalConfirm = document.getElementById('modal-confirm');
+const modalCancel = document.getElementById('modal-cancel');
 
 const startGameBtn = document.getElementById('start-game-btn');
 const clearBetsBtn = document.getElementById('clear-bets-btn');
@@ -53,6 +58,32 @@ function showDealerMessage(msg, duration = 2000) {
 
 function hideDealerMessage() {
     dealerMessage.classList.add('hidden');
+}
+
+// Custom confirm dialog to replace browser confirm()
+function customConfirm(title, message) {
+    return new Promise((resolve) => {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        customModal.classList.remove('hidden');
+
+        const handleConfirm = () => {
+            customModal.classList.add('hidden');
+            modalConfirm.removeEventListener('click', handleConfirm);
+            modalCancel.removeEventListener('click', handleCancel);
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            customModal.classList.add('hidden');
+            modalConfirm.removeEventListener('click', handleConfirm);
+            modalCancel.removeEventListener('click', handleCancel);
+            resolve(false);
+        };
+
+        modalConfirm.addEventListener('click', handleConfirm);
+        modalCancel.addEventListener('click', handleCancel);
+    });
 }
 
 let currentBankrollDisplay = 0;
@@ -451,7 +482,10 @@ async function handleInsuranceAndEvenMoney() {
     for (let i = 0; i < gameState.hands.length; i++) {
         const hand = gameState.hands[i];
         if (hand.is_blackjack) {
-            const takeEvenMoney = confirm(`Hand ${i + 1} has Blackjack!\n\nDealer shows Ace. Take EVEN MONEY (1:1 payout = $${hand.bet} immediately)?`);
+            const takeEvenMoney = await customConfirm(
+                `Hand ${i + 1} - BLACKJACK!`,
+                `Dealer shows Ace.\n\nTake EVEN MONEY?\n(1:1 payout = $${hand.bet} immediately)`
+            );
             if (takeEvenMoney) {
                 // Take even money - immediate payout
                 const payout = hand.bet * 2;
@@ -469,7 +503,10 @@ async function handleInsuranceAndEvenMoney() {
         if (!hand.is_blackjack && hand.insurance_bet === 0) {
             const maxInsurance = Math.min(Math.floor(hand.bet / 2), gameState.bankroll);
             if (maxInsurance > 0) {
-                const takeInsurance = confirm(`Hand ${i + 1}: Dealer shows Ace.\n\nTake INSURANCE? (Max: $${maxInsurance})\n\nInsurance pays 2:1 if dealer has blackjack.`);
+                const takeInsurance = await customConfirm(
+                    `Hand ${i + 1} - Insurance?`,
+                    `Dealer shows Ace.\n\nTake INSURANCE? (Max: $${maxInsurance})\n\nInsurance pays 2:1 if dealer has blackjack.`
+                );
                 if (takeInsurance) {
                     try {
                         const result = await apiCall('/insurance', {

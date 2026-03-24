@@ -1286,6 +1286,79 @@ input[type="number"] {
     }
 }
 
+/* Custom Modal */
+.custom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease;
+}
+
+.custom-modal.hidden {
+    display: none;
+}
+
+.custom-modal-content {
+    background: linear-gradient(145deg, #1e5a3a 0%, #164229 100%);
+    padding: 40px 50px;
+    border-radius: 16px;
+    border: 3px solid #8b5a3c;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.9),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    min-width: 400px;
+    max-width: 500px;
+    text-align: center;
+    animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalPop {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.custom-modal-content h3 {
+    font-size: 1.8em;
+    color: #ffd700;
+    margin: 0 0 20px 0;
+    text-shadow: 0 2px 10px rgba(255, 215, 0, 0.5);
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.custom-modal-content p {
+    font-size: 1.1em;
+    color: #ddd;
+    margin: 0 0 30px 0;
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.modal-buttons .btn {
+    min-width: 120px;
+    padding: 14px 30px;
+    font-size: 1em;
+}
+
 /* Message Area */
 .message-area {
     position: fixed;
