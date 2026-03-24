@@ -40,7 +40,7 @@
         <div class="dealer-section">
             <div class="table-text">
                 <div class="table-rule main-rule">BLACKJACK PAYS 3 TO 2</div>
-                <div class="table-rule">Dealer must stand on 17 and must draw to 16</div>
+                <div class="table-rule">Dealer hits soft 17 and must draw to 16</div>
                 <div class="table-rule insurance-rule">INSURANCE PAYS 2 TO 1</div>
             </div>
             <div class="dealer-info">
@@ -113,6 +113,10 @@
                     </div>
 
                     <div class="betting-controls">
+                        <button id="bet-half-btn" class="btn btn-secondary btn-quick-bet">½</button>
+                        <button id="bet-1x-btn" class="btn btn-secondary btn-quick-bet">1×</button>
+                        <button id="bet-2x-btn" class="btn btn-secondary btn-quick-bet">2×</button>
+                        <button id="bet-max-btn" class="btn btn-secondary btn-quick-bet">MAX</button>
                         <button id="clear-bets-btn" class="btn btn-secondary">CLEAR</button>
                         <button id="rebet-btn" class="btn btn-secondary">REBET</button>
                         <button id="deal-btn" class="btn btn-deal" disabled>DEAL</button>
@@ -146,6 +150,9 @@
 
         <!-- Dealer Message (shown during dealer actions and results) -->
         <div id="dealer-message" class="dealer-message hidden"></div>
+
+        <!-- Bust Overlay -->
+        <div id="bust-overlay" class="bust-overlay hidden">BUST!</div>
     </div>
 
     <!-- Message Area -->

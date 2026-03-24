@@ -104,17 +104,22 @@ class BlackjackGame:
 
         # Check for dealer blackjack (peek)
         upcard = self.dealer.cards[1]
-        if card_value(upcard.rank) in (10, 11):
+        dealer_should_peek = card_value(upcard.rank) in (10, 11)
+        dealer_has_blackjack = False
+
+        if dealer_should_peek:
             if self.dealer.is_blackjack():
                 self.phase = "settlement"
-                return {
-                    "success": True,
-                    "dealer_blackjack": True,
-                    "message": "Dealer has blackjack!",
-                }
+                dealer_has_blackjack = True
 
-        self.phase = "playing"
-        return {"success": True, "dealer_blackjack": False}
+        if not dealer_has_blackjack:
+            self.phase = "playing"
+
+        return {
+            "success": True,
+            "dealer_blackjack": dealer_has_blackjack,
+            "dealer_should_peek": dealer_should_peek,
+        }
 
     def place_insurance(self, hand_index: int, amount: int) -> Dict[str, Any]:
         """Place an insurance bet on a specific hand."""

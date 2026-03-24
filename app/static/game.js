@@ -16,11 +16,16 @@ const dealerCount = document.getElementById('dealer-count');
 const actionPanel = document.getElementById('action-panel');
 const chipTray = document.getElementById('chip-tray');
 const dealerMessage = document.getElementById('dealer-message');
+const bustOverlay = document.getElementById('bust-overlay');
 
 const startGameBtn = document.getElementById('start-game-btn');
 const clearBetsBtn = document.getElementById('clear-bets-btn');
 const rebetBtn = document.getElementById('rebet-btn');
 const dealBtn = document.getElementById('deal-btn');
+const betHalfBtn = document.getElementById('bet-half-btn');
+const bet1xBtn = document.getElementById('bet-1x-btn');
+const bet2xBtn = document.getElementById('bet-2x-btn');
+const betMaxBtn = document.getElementById('bet-max-btn');
 
 // Utility Functions
 function showMessage(msg, type = 'info') {
@@ -281,21 +286,28 @@ async function dealCards() {
         // Fade unused seats
         fadeUnusedSeats();
 
-        // Deal initial cards
-        showDealerMessage('Dealing...', 1500);
-        await new Promise(resolve => setTimeout(resolve, 500));
-
+        // Deal initial cards with API call first
         const dealResult = await apiCall('/deal', {});
         gameState = dealResult.state;
         console.log('Game state after deal:', gameState);
 
-        renderGameState();
+        // Staggered card dealing animation
+        await staggeredCardDeal();
+
+        // Dealer peek animation if needed
+        if (dealResult.dealer_should_peek) {
+            showDealerMessage('Dealer checking for blackjack...', 1500);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
 
         if (dealResult.dealer_blackjack) {
             showDealerMessage('Dealer has Blackjack!', 3000);
             await new Promise(resolve => setTimeout(resolve, 3000));
             await settleBets();
         } else {
+            // Check for player blackjacks and offer insurance/even money
+            await handleInsuranceAndEvenMoney();
+
             // Start playing hands
             currentHandIndex = 0;
             playCurrentHand();
@@ -315,6 +327,129 @@ function fadeUnusedSeats() {
             position.classList.remove('unused');
         }
     });
+}
+
+// Staggered card dealing - deal one card at a time
+async function staggeredCardDeal() {
+    // Clear all cards first
+    dealerCards.innerHTML = '';
+    document.querySelectorAll('.player-hand .cards').forEach(el => el.innerHTML = '');
+
+    const dealDelay = 300; // ms between each card
+
+    // First round - one card to each player, then dealer
+    for (let i = 0; i < gameState.hands.length; i++) {
+        const hand = gameState.hands[i];
+        const position = hand.position !== undefined ? hand.position : i;
+        const cardsContainer = document.querySelector(`.player-hand[data-position="${position}"] .cards`);
+
+        if (hand.cards[0]) {
+            const cardEl = createCardElement(hand.cards[0]);
+            cardsContainer.appendChild(cardEl);
+            playCardSound();
+            await new Promise(resolve => setTimeout(resolve, dealDelay));
+        }
+    }
+
+    // Dealer's first card (face down)
+    if (gameState.dealer.cards[0]) {
+        const cardEl = createCardElement(gameState.dealer.cards[0]);
+        dealerCards.appendChild(cardEl);
+        playCardSound();
+        await new Promise(resolve => setTimeout(resolve, dealDelay));
+    }
+
+    // Second round - one card to each player, then dealer
+    for (let i = 0; i < gameState.hands.length; i++) {
+        const hand = gameState.hands[i];
+        const position = hand.position !== undefined ? hand.position : i;
+        const cardsContainer = document.querySelector(`.player-hand[data-position="${position}"] .cards`);
+
+        if (hand.cards[1]) {
+            const cardEl = createCardElement(hand.cards[1]);
+            cardsContainer.appendChild(cardEl);
+            playCardSound();
+            await new Promise(resolve => setTimeout(resolve, dealDelay));
+        }
+    }
+
+    // Dealer's second card (face up)
+    if (gameState.dealer.cards[1]) {
+        const cardEl = createCardElement(gameState.dealer.cards[1]);
+        dealerCards.appendChild(cardEl);
+        playCardSound();
+        await new Promise(resolve => setTimeout(resolve, dealDelay));
+    }
+
+    // Update all totals after dealing
+    gameState.hands.forEach((hand, index) => {
+        const position = hand.position !== undefined ? hand.position : index;
+        const totalContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-total`);
+        const statusContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-status`);
+
+        if (hand.total !== null) {
+            if (hand.is_soft && hand.total <= 21) {
+                const lowTotal = hand.total - 10;
+                totalContainer.textContent = `${lowTotal}/${hand.total}`;
+            } else {
+                totalContainer.textContent = hand.total;
+            }
+        }
+
+        if (hand.is_blackjack) {
+            statusContainer.textContent = 'BLACKJACK';
+            statusContainer.classList.add('blackjack');
+        }
+    });
+}
+
+// Handle insurance and even money offers
+async function handleInsuranceAndEvenMoney() {
+    const dealerUpcard = gameState.dealer.cards[1];
+    if (!dealerUpcard || dealerUpcard.rank !== 'A') return;
+
+    // Check for even money offers (player blackjack vs dealer Ace)
+    for (let i = 0; i < gameState.hands.length; i++) {
+        const hand = gameState.hands[i];
+        if (hand.is_blackjack) {
+            const takeEvenMoney = confirm(`Hand ${i + 1} has Blackjack!\n\nDealer shows Ace. Take EVEN MONEY (1:1 payout = $${hand.bet} immediately)?`);
+            if (takeEvenMoney) {
+                // Take even money - immediate payout
+                const payout = hand.bet * 2;
+                gameState.bankroll += payout;
+                hand.finished = true;
+                showMessage(`Even money accepted! Win $${payout}`, 'success');
+                updateBankroll();
+            }
+        }
+    }
+
+    // TODO: Insurance prompt for non-blackjack hands
+    // This will be implemented in the insurance prompt task
+}
+
+// Play card sound effect
+function playCardSound() {
+    // Create simple whoosh sound using Web Audio API
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (e) {
+        // Silently fail if audio not supported
+    }
 }
 
 // Play Hands
@@ -388,10 +523,17 @@ async function takeAction(action) {
         gameState = result.state;
         renderGameState();
 
+        // Show BUST overlay if player busted
+        const currentHand = gameState.hands[currentHandIndex];
+        if (currentHand && currentHand.is_bust) {
+            bustOverlay.classList.remove('hidden');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            bustOverlay.classList.add('hidden');
+        }
+
         await new Promise(resolve => setTimeout(resolve, 400));
 
         // Check if the current hand still has actions available
-        const currentHand = gameState.hands[currentHandIndex];
         if (currentHand && !currentHand.finished && !currentHand.is_bust && !currentHand.surrendered) {
             // Hand is still active, show actions again (allows multiple hits)
             playCurrentHand();
@@ -722,6 +864,47 @@ document.querySelectorAll('.action-btn').forEach(btn => {
 
 // Strategy button
 document.getElementById('strategy-btn').addEventListener('click', showBasicStrategy);
+
+// Quick bet buttons
+betHalfBtn.addEventListener('click', () => {
+    if (!gameState || gameState.phase !== 'betting') return;
+    const total = currentBets.reduce((sum, bet) => sum + bet, 0);
+    const half = Math.floor(total / 2);
+    currentBets = currentBets.map(bet => bet > 0 ? Math.floor(bet / 2) : 0);
+    currentBets.forEach((bet, pos) => updateBettingCircle(pos));
+    updateDealButton();
+});
+
+bet1xBtn.addEventListener('click', () => {
+    if (!gameState || gameState.phase !== 'betting') return;
+    rebet();
+});
+
+bet2xBtn.addEventListener('click', () => {
+    if (!gameState || gameState.phase !== 'betting') return;
+    const doubled = currentBets.map(bet => bet * 2);
+    const total = doubled.reduce((sum, bet) => sum + bet, 0);
+    if (total > gameState.bankroll) {
+        showMessage('Insufficient chips for 2x bet', 'error');
+        return;
+    }
+    if (doubled.some(bet => bet > 0 && bet > 500)) {
+        showMessage('2x bet exceeds table maximum', 'error');
+        return;
+    }
+    currentBets = doubled;
+    currentBets.forEach((bet, pos) => updateBettingCircle(pos));
+    updateDealButton();
+});
+
+betMaxBtn.addEventListener('click', () => {
+    if (!gameState || gameState.phase !== 'betting') return;
+    // Max bet on first position
+    const maxBet = Math.min(500, gameState.bankroll);
+    currentBets = [maxBet, 0, 0];
+    currentBets.forEach((bet, pos) => updateBettingCircle(pos));
+    updateDealButton();
+});
 
 // Basic Blackjack Strategy
 function getBasicStrategy(playerTotal, dealerUpcard, isSoft, isPair, canDouble, canSurrender) {
