@@ -1961,6 +1961,13 @@ input[type="number"] {
         flex-shrink: 0;
     }
 
+    /* Hide half/1x/2x buttons on mobile */
+    #bet-half-btn,
+    #bet-1x-btn,
+    #bet-2x-btn {
+        display: none;
+    }
+
     .btn-secondary {
         padding: 7px 10px;
         font-size: 8px;
