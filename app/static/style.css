@@ -1217,39 +1217,188 @@ input[type="number"] {
     }
 
     .betting-circle {
-        width: 160px;
-        height: 120px;
+        width: 140px;
+        height: 105px;
+    }
+
+    .dealer-section {
+        top: 90px;
+        max-width: 700px;
     }
 }
 
 @media (max-width: 768px) {
+    .casino-table {
+        padding: 15px;
+    }
+
+    .casino-table::before {
+        top: 15px;
+        left: 15px;
+        right: 15px;
+        bottom: 15px;
+        border-radius: 80px;
+    }
+
+    .casino-table::after {
+        border-width: 15px;
+        border-radius: 100px;
+    }
+
+    .table-header {
+        top: 18px;
+        padding: 0 20px;
+    }
+
+    .table-sign {
+        padding: 10px 16px;
+    }
+
     .table-title {
-        font-size: 1.2em;
+        font-size: 1.1em;
+        letter-spacing: 1.5px;
+    }
+
+    .table-limits {
+        font-size: 0.65em;
+    }
+
+    .bankroll-display {
+        padding: 10px 18px;
+    }
+
+    .bankroll-label {
+        font-size: 0.65em;
     }
 
     .bankroll-amount {
         font-size: 1.4em;
     }
 
+    .dealer-section {
+        top: 75px;
+        padding: 15px;
+        max-width: 95%;
+    }
+
+    .table-rule {
+        font-size: 0.6em;
+        margin: 2px 0;
+        letter-spacing: 1px;
+    }
+
+    .table-rule.main-rule {
+        font-size: 0.75em;
+        letter-spacing: 2px;
+    }
+
+    .dealer-info {
+        gap: 20px;
+        margin-bottom: 15px;
+    }
+
+    .dealer-label {
+        font-size: 0.85em;
+        letter-spacing: 4px;
+    }
+
+    .dealer-count {
+        min-width: 70px;
+        padding: 8px 18px;
+        font-size: 1.3em;
+    }
+
+    .card {
+        padding: 15px 12px;
+        font-size: 1.4em;
+        min-width: 55px;
+    }
+
+    .cards {
+        gap: 6px;
+        min-height: 70px;
+    }
+
+    .hand-total {
+        font-size: 1.2em;
+        padding: 5px 14px;
+    }
+
+    .hand-status {
+        font-size: 0.85em;
+    }
+
     .player-section {
         flex-direction: column;
         align-items: center;
-        gap: 25px;
-        bottom: 160px;
+        gap: 15px;
+        bottom: 180px;
+        padding: 0 20px;
+    }
+
+    .player-position {
+        gap: 10px;
+    }
+
+    .player-position[data-position="0"],
+    .player-position[data-position="1"],
+    .player-position[data-position="2"] {
+        transform: translateY(0);
     }
 
     .betting-circle {
-        width: 150px;
-        height: 110px;
+        width: 130px;
+        height: 95px;
+    }
+
+    .betting-circle::before {
+        font-size: 0.5em;
+        width: 90px;
+    }
+
+    .circle-label {
+        top: 6px;
+        font-size: 0.9em;
+    }
+
+    .bet-amount {
+        font-size: 1em;
+    }
+
+    .bet-chip {
+        width: 50px;
+        height: 50px;
+    }
+
+    .bet-chip .chip-value {
+        font-size: 0.85em;
+    }
+
+    .player-hand {
+        min-width: 160px;
+        padding: 12px;
+    }
+
+    .bottom-bar {
+        bottom: 15px;
+        left: 15px;
+        right: 15px;
+        padding: 10px 12px 12px 12px;
     }
 
     .chip-selector {
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .chip-selector .chip {
-        width: 55px;
-        height: 55px;
+        width: 52px;
+        height: 52px;
+    }
+
+    .chip-selector .chip .chip-value {
+        font-size: 0.95em;
     }
 
     .chip-btn {
@@ -1259,39 +1408,271 @@ input[type="number"] {
     }
 
     .selected-chip {
-        width: 70px;
-        height: 70px;
+        width: 65px;
+        height: 65px;
     }
 
-    .bottom-bar {
-        padding: 12px 15px;
-        min-height: 90px;
+    .selected-chip .chip-value {
+        font-size: 1.05em;
+    }
+
+    .betting-controls {
+        gap: 10px;
+    }
+
+    .btn-secondary {
+        padding: 12px 20px;
+        font-size: 0.9em;
+    }
+
+    .btn-deal {
+        padding: 14px 35px;
+        font-size: 1em;
     }
 
     .action-panel {
-        gap: 8px;
+        gap: 6px;
+        flex-wrap: wrap;
     }
 
     .action-label {
-        font-size: 0.75em;
-        margin-right: 8px;
-        padding-right: 10px;
+        font-size: 0.7em;
+        margin-right: 6px;
+        padding-right: 8px;
+        width: 100%;
+        text-align: center;
+        border-right: none;
+        border-bottom: 2px solid rgba(255, 215, 0, 0.25);
+        padding-bottom: 6px;
+        margin-bottom: 4px;
     }
 
     .action-btn {
-        min-width: 70px;
-        padding: 12px 16px;
+        min-width: 65px;
+        padding: 10px 14px;
+        flex: 1;
+        max-width: 110px;
+    }
+
+    .action-btn[data-action="hit"],
+    .action-btn[data-action="stand"] {
+        min-width: 75px;
     }
 
     .action-btn .btn-label {
-        font-size: 0.75em;
+        font-size: 0.7em;
+        letter-spacing: 0.8px;
     }
 
-    .table-rule {
+    .btn-strategy {
+        min-width: 85px;
+        padding: 10px 14px;
+        margin-left: 0;
+        flex: 1;
+        max-width: 110px;
+    }
+
+    .btn-strategy .btn-label {
         font-size: 0.7em;
     }
 
+    .dealer-message {
+        padding: 25px 40px;
+        font-size: 1.3em;
+        max-width: 85%;
+        white-space: pre-line;
+    }
+
+    .message-area {
+        top: 55px;
+        right: 15px;
+        max-width: calc(100% - 30px);
+    }
+
+    .message {
+        font-size: 0.85em;
+        padding: 10px 14px;
+    }
+
+    .modal-content {
+        padding: 35px 25px;
+        margin: 0 20px;
+    }
+
+    .modal-content h2 {
+        font-size: 2em;
+    }
+
+    .modal-content p {
+        font-size: 1.1em;
+    }
+
+    input[type="number"] {
+        font-size: 1.1em;
+        width: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+    .table-title {
+        font-size: 0.95em;
+        letter-spacing: 1px;
+    }
+
+    .table-limits {
+        font-size: 0.6em;
+    }
+
+    .bankroll-amount {
+        font-size: 1.2em;
+    }
+
+    .dealer-section {
+        top: 70px;
+        padding: 10px;
+    }
+
+    .table-rule {
+        font-size: 0.55em;
+        letter-spacing: 0.5px;
+    }
+
     .table-rule.main-rule {
-        font-size: 0.9em;
+        font-size: 0.7em;
+        letter-spacing: 1.5px;
+    }
+
+    .dealer-label {
+        font-size: 0.75em;
+        letter-spacing: 3px;
+    }
+
+    .dealer-count {
+        min-width: 60px;
+        padding: 6px 14px;
+        font-size: 1.1em;
+    }
+
+    .card {
+        padding: 12px 10px;
+        font-size: 1.2em;
+        min-width: 48px;
+    }
+
+    .cards {
+        gap: 5px;
+        min-height: 60px;
+    }
+
+    .player-section {
+        bottom: 165px;
+        gap: 12px;
+    }
+
+    .betting-circle {
+        width: 110px;
+        height: 80px;
+    }
+
+    .betting-circle::before {
+        font-size: 0.45em;
+        width: 75px;
+    }
+
+    .bet-chip {
+        width: 45px;
+        height: 45px;
+    }
+
+    .bet-chip .chip-value {
+        font-size: 0.75em;
+    }
+
+    .player-hand {
+        min-width: 140px;
+        padding: 10px;
+    }
+
+    .hand-total {
+        font-size: 1.1em;
+        padding: 4px 12px;
+    }
+
+    .chip-selector .chip {
+        width: 48px;
+        height: 48px;
+    }
+
+    .chip-selector .chip .chip-value {
+        font-size: 0.85em;
+    }
+
+    .chip-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1.3em;
+    }
+
+    .selected-chip {
+        width: 58px;
+        height: 58px;
+    }
+
+    .selected-chip .chip-value {
+        font-size: 0.95em;
+    }
+
+    .betting-controls {
+        gap: 8px;
+    }
+
+    .btn-secondary {
+        padding: 10px 16px;
+        font-size: 0.85em;
+    }
+
+    .btn-deal {
+        padding: 12px 28px;
+        font-size: 0.95em;
+    }
+
+    .action-btn {
+        min-width: 58px;
+        padding: 9px 12px;
+    }
+
+    .action-btn[data-action="hit"],
+    .action-btn[data-action="stand"] {
+        min-width: 65px;
+    }
+
+    .action-btn .btn-label {
+        font-size: 0.65em;
+    }
+
+    .btn-strategy {
+        min-width: 75px;
+        padding: 9px 12px;
+    }
+
+    .btn-strategy .btn-label {
+        font-size: 0.65em;
+    }
+
+    .dealer-message {
+        padding: 20px 30px;
+        font-size: 1.1em;
+    }
+
+    .modal-content {
+        padding: 30px 20px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.7em;
+    }
+
+    .modal-content p {
+        font-size: 1em;
     }
 }
