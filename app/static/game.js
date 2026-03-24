@@ -256,9 +256,10 @@ function updateDealButton() {
 
 // Deal Cards
 async function dealCards() {
-    const bets = currentBets.filter(bet => bet >= 10);
+    // Check if at least one valid bet
+    const validBets = currentBets.filter(bet => bet >= 10);
 
-    if (bets.length === 0) {
+    if (validBets.length === 0) {
         showMessage('Place at least one bet of $10 or more', 'error');
         return;
     }
@@ -267,9 +268,11 @@ async function dealCards() {
     lastBets = [...currentBets];
 
     try {
-        // Place bets
-        const betResult = await apiCall('/bet', { bets });
+        // Place bets - send full array to preserve position mapping
+        console.log('Sending bets:', currentBets);
+        const betResult = await apiCall('/bet', { bets: currentBets });
         gameState = betResult.state;
+        console.log('Game state after bet:', gameState);
         updateBankroll();
 
         deactivateBettingCircles();
@@ -284,6 +287,7 @@ async function dealCards() {
 
         const dealResult = await apiCall('/deal', {});
         gameState = dealResult.state;
+        console.log('Game state after deal:', gameState);
 
         renderGameState();
 
@@ -358,8 +362,13 @@ function showActionPanel() {
 }
 
 function highlightCurrentHand() {
-    document.querySelectorAll('.player-hand').forEach((el, idx) => {
-        if (idx === currentHandIndex) {
+    // Get the position of the current hand
+    const currentHand = gameState.hands[currentHandIndex];
+    const currentPosition = currentHand ? (currentHand.position !== undefined ? currentHand.position : currentHandIndex) : -1;
+
+    document.querySelectorAll('.player-hand').forEach((el) => {
+        const position = parseInt(el.dataset.position);
+        if (position === currentPosition) {
             el.classList.add('active');
         } else {
             el.classList.remove('active');
@@ -539,12 +548,17 @@ function getCardValue(rank) {
 }
 
 function renderPlayerHand(hand, index) {
-    const position = index;
+    // Use the position field from the hand data to render in correct spot
+    const position = hand.position !== undefined ? hand.position : index;
+    console.log(`Rendering hand ${index}: position=${position}, cards=${hand.cards.length}`);
     const cardsContainer = document.querySelector(`.player-hand[data-position="${position}"] .cards`);
     const totalContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-total`);
     const statusContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-status`);
 
-    if (!cardsContainer) return;
+    if (!cardsContainer) {
+        console.error(`Could not find card container for position ${position}`);
+        return;
+    }
 
     const currentCardCount = cardsContainer.children.length;
     const newCardCount = hand.cards.length;
@@ -624,21 +638,7 @@ function updateSelectedChip() {
 
     // Update chip colors based on value
     selectedChipVisual.className = 'chip selected-chip';
-
-    // Visual feedback on all chips
-    document.querySelectorAll('.chip-selector .chip').forEach(c => c.style.opacity = '0.6');
-    const activeChip = document.querySelector(`.chip-selector .chip[data-value="${selectedChipValue}"]`);
-    if (activeChip) activeChip.style.opacity = '1';
 }
-
-// Chip selection
-document.querySelectorAll('.chip-selector .chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-        selectedChipValue = parseInt(chip.dataset.value);
-        currentChipIndex = chipValues.indexOf(selectedChipValue);
-        updateSelectedChip();
-    });
-});
 
 // Plus/minus buttons
 document.getElementById('increase-chip').addEventListener('click', () => {

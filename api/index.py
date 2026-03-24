@@ -39,6 +39,7 @@ def get_game() -> BlackjackGame:
         game.player_hands.append(hand)
 
     game.split_counts = session['game_state'].get('split_counts', [0] * len(game.player_hands))
+    game.hand_positions = session['game_state'].get('hand_positions', list(range(len(game.player_hands))))
 
     return game
 

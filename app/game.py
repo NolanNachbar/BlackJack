@@ -29,6 +29,7 @@ class BlackjackGame:
         self.shoe = Shoe(NUM_DECKS, CUT_CARD_PENETRATION)
         self.dealer = Hand()
         self.player_hands: List[Hand] = []
+        self.hand_positions: List[int] = []  # Track which positions (0-2) have hands
         self.split_counts: List[int] = []
         self.phase = "betting"  # betting, dealing, playing, dealer, settlement, game_over
 
@@ -55,20 +56,33 @@ class BlackjackGame:
         if not bets or len(bets) > 3:
             return {"success": False, "message": "Must bet on 1-3 hands"}
 
-        total_bet = sum(bets)
+        # Filter out zero bets (empty positions)
+        valid_bets = [bet for bet in bets if bet > 0]
+
+        if not valid_bets:
+            return {"success": False, "message": "Must place at least one bet"}
+
+        total_bet = sum(valid_bets)
         if total_bet > self.bankroll:
             return {"success": False, "message": "Insufficient bankroll"}
 
-        for bet in bets:
+        # Validate only non-zero bets
+        for bet in valid_bets:
             if bet < TABLE_MIN_BET or bet > TABLE_MAX_BET:
                 return {"success": False, "message": f"Bets must be between ${TABLE_MIN_BET} and ${TABLE_MAX_BET}"}
 
         # Deduct bets from bankroll
         self.bankroll -= total_bet
 
-        # Create hands
-        self.player_hands = [Hand(bet=bet) for bet in bets]
-        self.split_counts = [0] * len(bets)
+        # Create hands and track positions
+        self.player_hands = []
+        self.hand_positions = []
+        for position, bet in enumerate(bets):
+            if bet > 0:
+                self.player_hands.append(Hand(bet=bet))
+                self.hand_positions.append(position)
+
+        self.split_counts = [0] * len(self.player_hands)
 
         self.phase = "dealing"
         return {"success": True, "message": f"Bets placed: ${total_bet}"}
@@ -229,6 +243,9 @@ class BlackjackGame:
             self.split_counts.insert(hand_index + 1, self.split_counts[hand_index] + 1)
             self.split_counts[hand_index] += 1
 
+            # Keep the same position for the split hand
+            self.hand_positions.insert(hand_index + 1, self.hand_positions[hand_index])
+
             return {"success": True, "message": "Hand split"}
 
         return {"success": False, "message": "Unknown action"}
@@ -366,10 +383,12 @@ class BlackjackGame:
             "hands": [
                 {
                     **hand.to_dict(),
+                    "position": self.hand_positions[i] if i < len(self.hand_positions) else i,
                     "allowed_actions": self.get_allowed_actions(i) if self.phase == "playing" else [],
                 }
                 for i, hand in enumerate(self.player_hands)
             ],
+            "hand_positions": self.hand_positions,
             "table_min": TABLE_MIN_BET,
             "table_max": TABLE_MAX_BET,
             "chips": CHIP_SIZES,
