@@ -5,6 +5,7 @@ let currentHandIndex = 0;
 let selectedChipValue = 25; // Default chip selection
 let currentBets = [0, 0, 0]; // Bets for positions 0, 1, 2
 let lastBets = [0, 0, 0]; // For rebet functionality
+let sessionStats = { wins: 0, losses: 0, pushes: 0, blackjacks: 0 };
 
 // DOM Elements
 const startModal = document.getElementById('start-modal');
@@ -54,10 +55,39 @@ function hideDealerMessage() {
     dealerMessage.classList.add('hidden');
 }
 
+let currentBankrollDisplay = 0;
+let bankrollAnimationFrame = null;
+
 function updateBankroll() {
-    if (gameState) {
-        bankrollDisplay.textContent = `$${gameState.bankroll}`;
+    if (!gameState) return;
+
+    const target = gameState.bankroll;
+    const start = currentBankrollDisplay;
+    const difference = target - start;
+    const duration = 800; // ms
+    const startTime = performance.now();
+
+    function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Easing function (ease-out)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(start + (difference * easeOut));
+
+        currentBankrollDisplay = current;
+        bankrollDisplay.textContent = `$${current}`;
+
+        if (progress < 1) {
+            bankrollAnimationFrame = requestAnimationFrame(animate);
+        }
     }
+
+    if (bankrollAnimationFrame) {
+        cancelAnimationFrame(bankrollAnimationFrame);
+    }
+
+    animate(startTime);
 }
 
 // API Calls
@@ -424,8 +454,31 @@ async function handleInsuranceAndEvenMoney() {
         }
     }
 
-    // TODO: Insurance prompt for non-blackjack hands
-    // This will be implemented in the insurance prompt task
+    // Insurance prompt for non-blackjack hands
+    for (let i = 0; i < gameState.hands.length; i++) {
+        const hand = gameState.hands[i];
+        if (!hand.is_blackjack && hand.insurance_bet === 0) {
+            const maxInsurance = Math.min(Math.floor(hand.bet / 2), gameState.bankroll);
+            if (maxInsurance > 0) {
+                const takeInsurance = confirm(`Hand ${i + 1}: Dealer shows Ace.\n\nTake INSURANCE? (Max: $${maxInsurance})\n\nInsurance pays 2:1 if dealer has blackjack.`);
+                if (takeInsurance) {
+                    try {
+                        const result = await apiCall('/insurance', {
+                            hand_index: i,
+                            amount: maxInsurance
+                        });
+                        if (result.success) {
+                            gameState = result.state;
+                            updateBankroll();
+                            showMessage(`Insurance placed: $${maxInsurance}`, 'success');
+                        }
+                    } catch (error) {
+                        console.error('Insurance error:', error);
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Play card sound effect
@@ -488,6 +541,16 @@ function showActionPanel() {
     // Hide chip tray, show action panel
     chipTray.classList.add('hidden');
     actionPanel.classList.remove('hidden');
+
+    // Update action label with hand position
+    const actionLabel = document.querySelector('.action-label');
+    if (actionLabel) {
+        if (gameState.hands.length > 1) {
+            actionLabel.textContent = `HAND ${currentHandIndex + 1} OF ${gameState.hands.length}`;
+        } else {
+            actionLabel.textContent = `HAND 1`;
+        }
+    }
 
     // Enable/disable action buttons based on allowed actions
     document.querySelectorAll('.action-btn').forEach(btn => {
@@ -608,28 +671,57 @@ async function settleBets() {
 
 function showResults(results) {
     let messages = [];
-    results.forEach(result => {
+    results.forEach((result, idx) => {
         let msg = `Hand ${result.hand}: `;
+        let outcomeClass = '';
+
         switch (result.outcome) {
             case 'blackjack':
                 msg += `BLACKJACK! Win $${result.payout}`;
+                outcomeClass = 'win';
+                sessionStats.wins++;
+                sessionStats.blackjacks++;
                 break;
             case 'win':
                 msg += `WIN! $${result.payout}`;
+                outcomeClass = 'win';
+                sessionStats.wins++;
                 break;
             case 'push':
                 msg += `PUSH - Return $${result.payout}`;
+                outcomeClass = 'push';
+                sessionStats.pushes++;
                 break;
             case 'loss':
             case 'bust':
                 msg += `LOSE`;
+                outcomeClass = 'loss';
+                sessionStats.losses++;
                 break;
             case 'surrender':
                 msg += `SURRENDER - Return $${result.payout}`;
+                outcomeClass = 'push';
+                sessionStats.pushes++;
                 break;
         }
         messages.push(msg);
+
+        // Add outcome marker to the hand
+        const hand = gameState.hands[idx];
+        if (hand) {
+            const position = hand.position !== undefined ? hand.position : idx;
+            const statusContainer = document.querySelector(`.player-hand[data-position="${position}"] .hand-status`);
+            if (statusContainer) {
+                statusContainer.textContent = result.outcome.toUpperCase();
+                statusContainer.className = `hand-status ${outcomeClass}`;
+            }
+        }
     });
+
+    // Update session stats display
+    document.getElementById('stat-wins').textContent = sessionStats.wins;
+    document.getElementById('stat-losses').textContent = sessionStats.losses;
+    document.getElementById('stat-pushes').textContent = sessionStats.pushes;
 
     showDealerMessage(messages.join(' | '), 4000);
 }
@@ -687,12 +779,21 @@ function renderDealerHand() {
             } else {
                 dealerCount.textContent = gameState.dealer.total;
             }
+            dealerCount.style.visibility = 'visible';
         } else {
-            // One card hidden - don't show count yet
-            dealerCount.textContent = '';
+            // One card hidden - show visible card value only
+            const visibleCard = gameState.dealer.cards.find(card => card.rank !== '??');
+            if (visibleCard) {
+                dealerCount.textContent = getCardValue(visibleCard.rank);
+                dealerCount.style.visibility = 'visible';
+            } else {
+                dealerCount.textContent = '';
+                dealerCount.style.visibility = 'hidden';
+            }
         }
     } else {
         dealerCount.textContent = '';
+        dealerCount.style.visibility = 'hidden';
     }
 }
 

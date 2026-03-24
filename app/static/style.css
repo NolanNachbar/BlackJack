@@ -241,6 +241,20 @@ input[type="number"] {
     letter-spacing: 1px;
 }
 
+.session-stats {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    font-size: 0.65em;
+    color: rgba(255, 255, 255, 0.6);
+    justify-content: center;
+}
+
+.stat-item {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
 /* Dealer Section - Table Zone */
 .dealer-section {
     position: absolute;
@@ -322,7 +336,7 @@ input[type="number"] {
 }
 
 .dealer-count:empty {
-    visibility: hidden;
+    opacity: 0;
 }
 
 .dealer-hand {
@@ -679,6 +693,24 @@ input[type="number"] {
     color: #f33;
     text-transform: uppercase;
     text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+}
+
+.hand-status.win {
+    color: #0f0;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.hand-status.loss {
+    color: #f33;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+}
+
+.hand-status.push {
+    color: #ffd700;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 /* Control Zone - Floating Tray */
